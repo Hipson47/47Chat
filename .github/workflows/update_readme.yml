@@ -1,0 +1,51 @@
+name: Update README
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Generate project structure
+        run: |
+          sudo apt-get update && sudo apt-get install -y tree
+          tree -I 'rag_env|__pycache__|.git*|.vscode' > structure.txt
+
+      - name: Update README
+        run: |
+          python -c "
+          with open('README.md', 'r', encoding='utf-8') as f:
+              readme_content = f.read()
+          with open('structure.txt', 'r', encoding='utf-8') as f:
+              structure_content = f.read()
+          
+          start_marker = ''
+          end_marker = ''
+          
+          # Zbuduj nową zawartość README
+          prefix = readme_content.split(start_marker)[0]
+          suffix = readme_content.split(end_marker)[1]
+          new_readme = (prefix + start_marker + 
+                        '\\n```\\n' + structure_content + '\\n```\\n' + 
+                        end_marker + suffix)
+          
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.write(new_readme)
+          "
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "README is already up to date."
+          else
+            git commit -m "docs: Automatyczna aktualizacja struktury projektu w README"
+            git push
+          fi
