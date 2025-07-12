@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+langchain
+langchain-community
+faiss-cpu
+sentence-transformers
+langchain-google-vertexai
+langchain-openai
+pypdf 
