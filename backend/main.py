@@ -1,27 +1,30 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain.chains import ConversationalRetrievalChain
 
 # Opcja 1: Model Google Vertex AI (Gemini)
-from langchain_google_vertexai import VertexAI
+# from langchain_google_vertexai import VertexAI
 
 # Opcja 2: Model OpenAI (GPT)
-# from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 # --- Konfiguracja ---
 # Ustaw swoje klucze API jako zmienne środowiskowe
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "path/to/your/credentials.json"
-# os.environ["OPENAI_API_KEY"] = "twoj_klucz_api_openai"
+# Upewnij się, że klucz API OpenAI jest ustawiony w zmiennych środowiskowych
+# Na przykład: os.environ["OPENAI_API_KEY"] = "twoj_klucz_api_openai"
 
 # Zmienna globalna do przechowywania wektorowej bazy danych
 vectorstore = None
@@ -40,6 +43,8 @@ def process_text_from_files(files: List[UploadFile]):
     """Wyodrębnia tekst z wgranych plików (PDF, MD)."""
     full_text = ""
     for file in files:
+        if not file.filename:
+            continue
         temp_path = f"temp_{file.filename}"
         with open(temp_path, "wb") as f:
             f.write(file.file.read())
@@ -112,11 +117,11 @@ async def chat_with_rag(request: ChatRequest):
         retriever = vectorstore.as_retriever()
 
         # --- Wybór modelu LLM ---
-        # Opcja 1: Gemini 1.5 Flash
-        llm = VertexAI(model_name="gemini-1.5-flash-001")
+        # Opcja 1: Gemini 1.5 Flash (zakomentowane)
+        # llm = VertexAI(model_name="gemini-1.5-flash-001")
 
-        # Opcja 2: GPT-4o-mini (odkomentuj, aby użyć)
-        # llm = ChatOpenAI(model="gpt-4o-mini")
+        # Opcja 2: GPT-4o-mini
+        llm = ChatOpenAI(model="gpt-3.5-turbo")
         
         template = """Odpowiedz na pytanie użytkownika opierając się tylko i wyłącznie na poniższym kontekście. Jeśli w kontekście nie ma odpowiedzi, poinformuj o tym.
         Kontekst: {context}

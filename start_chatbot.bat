@@ -1,27 +1,33 @@
 @echo off
-REM --- Automatyczny skrypt startowy dla Chatbota RAG ---
-REM --- 1. Aktywuje srodowisko wirtualne                 ---
-REM --- 2. Instaluje potrzebne biblioteki                ---
-REM --- 3. Uruchamia aplikacje                         ---
+TITLE 47Chat Launcher
 
-echo Startowanie...
+ECHO.
+ECHO  **************************************************
+ECHO  * Uruchamianie aplikacji 47Chat          *
+ECHO  * (Backend: FastAPI, Frontend: Streamlit)   *
+ECHO  **************************************************
+ECHO.
 
-REM --- Upewnij sie, ze ponizsza sciezka jest poprawna ---
-set PROJECT_PATH=C:\Users\marci\Desktop\RAGZCHATEM
+REM --- Sprawdzenie, czy srodowisko wirtualne istnieje ---
+IF NOT EXIST rag_env (
+    ECHO Tworzenie srodowiska wirtualnego...
+    python -m venv rag_env
+)
 
-echo.
-echo === Krok 1: Aktywacja srodowiska wirtualnego ===
-call %PROJECT_PATH%\rag_env\Scripts\activate.bat
+REM --- Uruchomienie serwera Backend w nowym oknie ---
+ECHO [1/2] Uruchamianie serwera Backend (FastAPI)...
+START "Backend - 47Chat" cmd /k "rag_env\Scripts\activate.bat && cd backend && pip install -r requirements.txt && uvicorn main:app --reload --port 8000"
 
-echo.
-echo === Krok 2: Sprawdzanie i instalacja bibliotek ===
-pip install -r %PROJECT_PATH%\requirements.txt
+REM --- Czekamy chwile, zeby backend mial czas sie uruchomic ---
+ECHO Czekam 5 sekund na start backendu...
+timeout /t 5 /nobreak > NUL
 
-echo.
-echo === Krok 3: Uruchamianie aplikacji Chatbota ===
-echo Aplikacja otworzy sie w nowej karcie przegladarki...
-streamlit run %PROJECT_PATH%\app.py
+REM --- Uruchomienie serwera Frontend w drugim nowym oknie ---
+ECHO [2/2] Uruchamianie interfejsu Frontend (Streamlit)...
+START "Frontend - 47Chat" cmd /k "rag_env\Scripts\activate.bat && cd frontend && pip install -r requirements.txt && streamlit run app.py"
 
-echo.
-echo Aplikacja zostala zamknieta. Nacisnij dowolny klawisz, aby zakonczyc.
+ECHO.
+ECHO Gotowe! Aplikacja zostala uruchomiona w dwoch osobnych oknach.
+ECHO To okno mozna teraz zamknac.
+ECHO.
 pause

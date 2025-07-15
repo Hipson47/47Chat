@@ -8,3 +8,4 @@ sentence-transformers
 langchain-google-vertexai
 langchain-openai
 pypdf 
+langchain-huggingface 
