@@ -7,3 +7,7 @@ pypdf
 markdown
 beautifulsoup4
 lxml
+requests
+pydantic
+pyyaml
+streamlit

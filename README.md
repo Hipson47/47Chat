@@ -1,142 +1,201 @@
-# 47Chat - AI Orchestrator Bot
+# 47Chat - AI Multi-Agent Orchestrator
 
-Welcome to the 47Chat repository, an advanced AI-driven orchestrator bot designed for modular, team-based task execution. This project leverages a powerful combination of FastAPI, LangChain RAG, local Ollama models, and the Gemini 2.5 Pro API to create a sophisticated multi-agent system.
+Welcome to 47Chat, an advanced AI-driven orchestrator bot designed for intelligent multi-agent task execution. This unified application combines FastAPI backend services, local Ollama LLM integration, Gemini 2.5 Pro API, and Retrieval-Augmented Generation (RAG) to create a sophisticated multi-agent discussion system.
 
-The orchestrator is built around a meta-prompt engine that coordinates specialized "alters" (AI experts) grouped into teams. It dynamically assigns tasks, manages conversational flows, and continuously improves its performance through adaptive learning.
+The orchestrator coordinates specialized AI "alters" (experts) organized into teams, running structured discussions through multiple phases (Brainstorm, CriticalReview, SelfVerify, Vote) to provide comprehensive, well-reasoned responses to complex questions.
 
 ## 🚀 Key Features
 
-- **Meta-Prompt Engine**: A central YAML-based configuration (`meta_prompt.yaml`) drives the multi-agent coordination, allowing for dynamic team assignment and phased task execution (e.g., Brainstorm, CriticalReview, Vote).
-- **Retrieval-Augmented Generation (RAG)**: Ingests and indexes documents (`.pdf`, `.md`, `.txt`) into a FAISS vector store. The orchestrator uses this knowledge base to provide contextually relevant information to the agents.
-- **Robust API**: Built with FastAPI, providing a clean and efficient interface for interacting with the orchestrator.
-  - `POST /upload`: Upload and ingest documents into the RAG store.
-  - `POST /retrieve`: Query the RAG store to get the most relevant context chunks.
-- **Modular Client Architecture**:
-  - `OllamaClient`: Wrapper for running local LLMs on your own hardware.
-  - `GeminiClient`: Wrapper for leveraging the powerful Gemini 2.5 Pro model for moderator and complex reasoning tasks.
-  - `ToolClient`: Provides a unified interface for various tools, including `file_search`, `web_search`, `python` (for analysis), and `image_gen`.
-- **Advanced Orchestration Capabilities**:
-  - **Adaptive Scheduling**: Dynamically adjusts the execution flow based on performance metrics.
-  - **Self-Improvement**: Learns from past interactions to optimize team assignments and phase sequences.
-  - **Emergency Handling**: Detects critical keywords to trigger special workflows, such as involving the security team.
-  - **Tool Management**: Tracks and optimizes the usage of external tools.
+- **Multi-Agent Orchestration**: Coordinates multiple AI agents with specialized competencies organized into domain-specific teams (Backend, Frontend, Security, Operations, etc.)
+- **Phase-Based Discussions**: Structured conversation flow through Brainstorm → CriticalReview → SelfVerify → Vote phases
+- **Retrieval-Augmented Generation (RAG)**: Ingests and indexes documents (`.pdf`, `.md`, `.txt`) using FAISS vector store for contextually relevant responses
+- **Local LLM Integration**: Uses Ollama for running models locally on your hardware (optimized for RTX 4060 Ti)
+- **Gemini Integration**: Leverages Gemini 2.5 Pro for final decision synthesis and moderation
+- **Unified API**: Single FastAPI backend serving both RAG and orchestration functionality
+- **Interactive Frontend**: Streamlit-based UI for visualizing multi-agent discussions and results
+- **Adaptive Capabilities**: Self-improvement, emergency handling, and performance optimization
 
 ## 🌳 Architecture Overview
 
-The project is designed with a modular and scalable architecture to facilitate extensibility and maintainability.
+The application follows a unified architecture where all components are integrated into a single, cohesive system:
 
-### Folder Structure
+### Project Structure
 
 ```
 .
-├── orchestrator/
-│   ├── clients/          # Wrappers for external services (Ollama, Gemini, Tools)
-│   ├── utils/            # Core utilities (YAML loading, team assignment, metrics)
-│   ├── tests/            # Automated tests for the orchestrator and RAG
-│   ├── agent.py          # Main entrypoint for the OrchestratorAgent
-│   └── meta_prompt.yaml  # Core configuration for agents, teams, and phases
 ├── backend/
-│   ├── rag_utils.py      # Core RAG logic (ingestion, chunking, FAISS store)
-│   └── main.py           # FastAPI application for RAG services
-├── uploads/              # Directory for uploaded documents
-└── run_rag_flow.py       # Example script to run an end-to-end RAG-powered round
+│   ├── orchestrator/           # Multi-agent orchestration engine
+│   │   ├── clients/           # LLM and tool client wrappers
+│   │   ├── utils/             # Core utilities (loading, team assignment, metrics)
+│   │   ├── tests/             # Automated tests
+│   │   ├── agent.py           # Main OrchestratorAgent and Alter classes
+│   │   └── meta_prompt.yaml   # Agent configuration and team definitions
+│   ├── main.py                # Unified FastAPI application
+│   ├── rag_utils.py           # RAG processing and FAISS integration
+│   └── requirements.txt       # All dependencies
+├── frontend/
+│   └── app.py                 # Streamlit UI for orchestration visualization
+└── uploads/                   # Document storage directory
 ```
 
-### High-Level Flow
+### System Flow
 
-1.  **Upload**: Documents are sent to the `/upload` endpoint of the FastAPI backend.
-2.  **Ingest**: The backend's `RAGUtils` processes the documents, creates embeddings, and stores them in the `rag_store.faiss` vector store.
-3.  **Retrieve**: When a user prompt is received with `use_rag=True`, the `OrchestratorAgent` calls the `/retrieve` endpoint to get relevant context.
-4.  **Orchestrate**: The agent uses the `meta_prompt.yaml` to assign teams, prepend the RAG context to the prompt, and execute the defined phases, invoking the appropriate models and tools for each step.
+1. **Document Upload**: Users upload documents through the Streamlit UI or `/upload/` API
+2. **RAG Ingestion**: Documents are processed, chunked, and stored in FAISS vector store
+3. **Question Processing**: User questions are sent to the `/orchestrate/` endpoint
+4. **Team Assignment**: The orchestrator analyzes the question and assigns relevant expert teams
+5. **Multi-Phase Discussion**: Each assigned agent contributes through structured phases
+6. **Final Decision**: Gemini synthesizes all contributions into a final recommendation
+7. **Visualization**: The Streamlit frontend displays the complete discussion transcript
 
 ## 🛠️ Setup and Usage
 
-Follow these steps to get the orchestrator running on your local machine.
-
 ### Prerequisites
 
-- Python 3.10+
-- **NVIDIA GPU**: An RTX 4060 Ti or better is recommended for running local models with Ollama.
-- **API Keys**:
-  - Create a `.env` file in the root directory.
-  - Add your API keys to the `.env` file:
-    ```
-    GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-    ```
+- **Python 3.10+**
+- **NVIDIA GPU**: RTX 4060 Ti or better recommended for local Ollama models
+- **Ollama**: Install from [ollama.com](https://ollama.com)
+- **API Keys**: Create a `.env` file with:
+  ```
+  GEMINI_API_KEY="your_gemini_api_key_here"
+  ```
 
 ### Installation
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Hipson47/47Chat.git
-    cd 47Chat
-    ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Hipson47/47Chat.git
+   cd 47Chat
+   ```
 
-2.  **Install dependencies:**
-    This project uses separate requirements files for the backend and orchestrator.
-    ```bash
-    pip install -r backend/requirements.txt
-    pip install -r orchestrator/requirements.txt # (Assuming one exists or consolidate them)
-    ```
+2. **Install dependencies:**
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+3. **Set up Ollama:**
+   ```bash
+   # Install and start Ollama service
+   ollama pull llama3
+   ollama serve
+   ```
 
 ### Running the Application
 
-1.  **Start the FastAPI Server:**
-    The RAG service must be running for the orchestrator to function correctly.
-    ```bash
-    uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-    ```
+1. **Start the Backend Service:**
+   ```bash
+   cd backend
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-2.  **Run a Sample Round:**
-    Use the `run_rag_flow.py` script to see an end-to-end example. This will start the backend, upload a sample document, and run the orchestrator.
-    ```bash
-    python run_rag_flow.py
-    ```
+2. **Launch the Frontend (in a new terminal):**
+   ```bash
+   streamlit run frontend/app.py
+   ```
 
-## ⚙️ API and SDK Examples
+3. **Access the Application:**
+   - Frontend UI: http://localhost:8501
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
 
-### `curl` Examples
+## 💡 Usage Examples
 
-**1. Upload a document:**
+### Web Interface
+
+1. Open the Streamlit frontend at http://localhost:8501
+2. Upload documents using the sidebar file uploader
+3. Enter your question in the main interface
+4. Toggle "Use RAG Context" to include document knowledge
+5. Click "Start Orchestration" to begin the multi-agent discussion
+6. View the structured results showing each phase and agent contribution
+
+### API Usage
+
+**Upload Documents:**
 ```bash
-curl -X POST -F "files=@/path/to/your/document.md" http://127.0.0.1:8000/upload/
+curl -X POST -F "files=@document.pdf" http://localhost:8000/upload/
 ```
 
-**2. Retrieve context:**
+**Run Orchestration:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"query": "modern frontend development", "k": 2}' http://127.0.0.1:8000/retrieve/
+curl -X POST "http://localhost:8000/orchestrate/" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How can I improve my application architecture?", "use_rag": true}'
 ```
 
 ### Python SDK Example
 
-The `OrchestratorAgent` can be used as an SDK to run orchestrated rounds within your own Python applications.
-
 ```python
-from orchestrator.agent import OrchestratorAgent
+import requests
 
-# Initialize the agent (ensure the backend service is running)
-agent = OrchestratorAgent("orchestrator/meta_prompt.yaml")
+# Upload a document
+with open("document.pdf", "rb") as f:
+    response = requests.post("http://localhost:8000/upload/", 
+                           files={"files": ("document.pdf", f, "application/pdf")})
 
-# Define a user prompt
-user_prompt = "How can I build a more interactive UI with React?"
+# Run orchestration
+response = requests.post("http://localhost:8000/orchestrate/", 
+                        json={"question": "Analyze this document", "use_rag": True})
 
-# Run a round with RAG-enabled context retrieval
-print("--- Running Orchestrator with RAG ---")
-agent.run_round(user_prompt, use_rag=True)
+result = response.json()
+print(result["transcript"]["final_decision"])
 ```
 
-## ✅ Testing
+## 🧪 Testing
 
-The project includes a suite of automated tests to ensure correctness and stability.
+The project includes comprehensive automated tests:
 
-- **Test Directory**: All tests are located in the `orchestrator/tests/` directory.
-- **Running Tests**: Use `pytest` to run the test suite.
-  ```bash
-  pytest orchestrator/tests/
-  ```
+```bash
+# Run all tests
+python -m pytest backend/orchestrator/tests/
+
+# Run specific test file
+python -m unittest backend.orchestrator.tests.test_rag
+```
 
 ### Test Coverage
 
-- **Meta-Prompt Loading**: Verifies that the `meta_prompt.yaml` loads correctly.
-- **RAG Ingestion & Retrieval**: Ensures that the document upload, indexing, and retrieval processes work as expected.
-- **End-to-End Round**: Tests a full orchestrator round to confirm that all components integrate correctly.
+- **Meta-Prompt Loading**: Validates YAML configuration parsing
+- **RAG Integration**: Tests document upload, indexing, and retrieval
+- **Orchestration Flow**: Verifies end-to-end multi-agent discussions
+- **API Endpoints**: Ensures proper request/response handling
+
+## 🔧 Configuration
+
+The system behavior is controlled by `backend/orchestrator/meta_prompt.yaml`:
+
+- **Teams**: Define expert groups and their assigned agents
+- **Alters**: Configure individual AI agents with competencies and examples
+- **Phases**: Customize discussion flow and phase-specific instructions
+- **Emergency Rules**: Set up keyword-triggered special workflows
+- **Adaptive Settings**: Configure performance optimization parameters
+
+## 🚀 Advanced Features
+
+- **Adaptive Scheduling**: Automatically adjusts discussion phases based on performance metrics
+- **Emergency Handling**: Detects critical keywords to trigger specialized workflows
+- **Self-Improvement**: Learns from past discussions to optimize team assignments
+- **Tool Integration**: Supports file search, web search, Python analysis, and image generation
+- **Health Monitoring**: Built-in health checks for all system components
+
+## 📊 Monitoring and Metrics
+
+Access system health and performance metrics:
+
+- **Health Check**: GET `/health` - System status and component availability
+- **Metrics Logging**: Automatic performance tracking and optimization
+- **Frontend Status**: Real-time backend and Ollama connectivity indicators
+
+## 🤝 Contributing
+
+This project is designed for easy extension and customization. Key areas for contribution:
+
+- Adding new agent types and competencies
+- Implementing additional LLM providers
+- Extending RAG capabilities with new document types
+- Improving the frontend visualization
+- Adding new orchestration phases or workflows
+
+---
+
+**Powered by 47Chat Multi-Agent Orchestrator** | Local LLMs + RAG + Multi-Agent Intelligence

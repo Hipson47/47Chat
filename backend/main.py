@@ -1,28 +1,41 @@
 # backend/main.py
 """
-FastAPI backend for the RAG service.
-Provides endpoints for document upload and retrieval.
+FastAPI backend for the unified Orchestrator and RAG service.
+Provides endpoints for document upload and orchestrated multi-agent discussions.
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Any
 import os
 import shutil
 
 from rag_utils import RAGUtils
+from orchestrator.agent import OrchestratorAgent
 
-app = FastAPI()
+app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
+
+# Initialize components
 rag_utils = RAGUtils()
+orchestrator = None  # Will be initialized lazily
 
 # Create a directory for uploads if it doesn't exist
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-class RetrieveRequest(BaseModel):
-    query: str
-    k: int = 5
+class OrchestrationRequest(BaseModel):
+    question: str
+    use_rag: bool = True
+
+def get_orchestrator():
+    """
+    Lazy initialization of the orchestrator to avoid startup issues.
+    """
+    global orchestrator
+    if orchestrator is None:
+        orchestrator = OrchestratorAgent()
+    return orchestrator
 
 @app.post("/upload/")
 async def upload_files(files: List[UploadFile] = File(...)):
@@ -33,38 +46,93 @@ async def upload_files(files: List[UploadFile] = File(...)):
     if not files:
         raise HTTPException(status_code=400, detail="No files were provided.")
 
+    ingested_files = []
+    
     for file in files:
         file_path = os.path.join(UPLOAD_DIR, file.filename)
         
         # Save the uploaded file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        # Ingest the file into the RAG store
         try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+                
+            # Ingest the file into the RAG store
             rag_utils.ingest(file_path)
+            ingested_files.append(file.filename)
+            
         except Exception as e:
             # Clean up the uploaded file on failure
-            os.remove(file_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
             raise HTTPException(status_code=500, detail=f"Failed to ingest {file.filename}: {e}")
 
-    return {"message": f"Successfully uploaded and ingested {len(files)} files."}
+    return {
+        "message": f"Successfully uploaded and ingested {len(ingested_files)} files.",
+        "files": ingested_files
+    }
 
-@app.post("/retrieve/")
-async def retrieve_chunks(request: RetrieveRequest):
+@app.post("/orchestrate/")
+async def orchestrate_discussion(request: OrchestrationRequest) -> Dict[str, Any]:
     """
-    Retrieves the top-k chunks from the RAG store for a given query.
-    Expects a JSON payload: {"query": "<text>", "k": 5}
+    Runs a full multi-agent orchestrated discussion on the given question.
+    
+    This endpoint:
+    1. Takes a user question
+    2. Optionally retrieves relevant context from the RAG store
+    3. Assigns appropriate teams based on the question
+    4. Runs a multi-phase discussion (Brainstorm, CriticalReview, SelfVerify, Vote)
+    5. Returns the full transcript and final decision
     """
-    if not request.query:
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        results = rag_utils.retrieve(request.query, request.k)
-        return {"results": results}
+        # Get the orchestrator instance
+        agent = get_orchestrator()
+        
+        # Run the orchestrated discussion
+        result = agent.run_round(request.question, use_rag=request.use_rag)
+        
+        return {
+            "status": "success",
+            "transcript": result
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve chunks: {e}")
+        raise HTTPException(status_code=500, detail=f"Orchestration failed: {str(e)}")
 
 @app.get("/")
 def read_root():
-    return {"message": "RAG service is running."}
+    """
+    Root endpoint providing service information.
+    """
+    return {
+        "message": "47Chat Orchestrator Service",
+        "version": "1.0.0",
+        "endpoints": {
+            "/upload/": "Upload documents for RAG ingestion",
+            "/orchestrate/": "Run multi-agent orchestrated discussions"
+        }
+    }
+
+@app.get("/health")
+def health_check():
+    """
+    Health check endpoint.
+    """
+    # Check if Ollama is available
+    try:
+        agent = get_orchestrator()
+        ollama_available = agent.ollama_client.is_available()
+    except:
+        ollama_available = False
+    
+    return {
+        "status": "healthy",
+        "ollama_available": ollama_available,
+        "rag_store_exists": os.path.exists("rag_store.faiss")
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
