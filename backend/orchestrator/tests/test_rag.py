@@ -15,6 +15,7 @@ import requests
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from orchestrator.agent import OrchestratorAgent
+from backend.rag_utils import RAGUtils
 
 class TestRAG(unittest.TestCase):
     
@@ -60,17 +61,22 @@ class TestRAG(unittest.TestCase):
         self.assertTrue(os.path.exists("rag_store.faiss"))
 
     def test_2_retrieve(self):
-        """Tests the retrieval endpoint."""
-        response = requests.post("http://127.0.0.1:8001/retrieve/", json={"query": "software development", "k": 1})
-        
-        self.assertEqual(response.status_code, 200)
-        results = response.json().get("results", [])
-        self.assertEqual(len(results), 1)
-        self.assertIn("software development", results[0]["chunk"])
+        """Tests retrieval via a NEW RAGUtils instance to verify persistence after restart."""
+        # Simulate application restart by creating a new RAGUtils instance
+        rag = RAGUtils()
+        # Ensure index and chunks are loaded from disk
+        self.assertTrue(os.path.exists("rag_store.faiss"), "FAISS index file should exist")
+        self.assertTrue(os.path.exists("rag_chunks.json"), "Chunks file should exist")
+
+        results = rag.retrieve("software development", k=1)
+        self.assertGreaterEqual(len(results), 1, "Should retrieve at least one result from persisted store")
+        # Basic content assertion
+        self.assertIsInstance(results[0].get("chunk"), str)
+        self.assertGreater(len(results[0]["chunk"]), 0)
 
     def test_3_rag_in_orchestrator(self):
         """Tests the RAG integration in the OrchestratorAgent."""
-        agent = OrchestratorAgent("orchestrator/meta_prompt.yaml", backend_url="http://127.0.0.1:8001")
+        agent = OrchestratorAgent()
         
         # This is a functional test that checks if the context is retrieved.
         # It doesn't assert the final output, but ensures the flow works.

@@ -137,3 +137,6 @@ dmypy.json
 
 # VSCode
 .vscode/ 
+
+# RAG persistent artifacts
+rag_chunks.json

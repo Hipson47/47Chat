@@ -98,6 +98,34 @@ The application follows a unified architecture where all components are integrat
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
 
+## 🐳 Running with Docker
+
+The easiest way to run the full stack is with Docker and Docker Compose.
+
+### Prerequisites
+
+- Docker Desktop (with Compose) installed and running
+- Optional: `.env` file with `GEMINI_API_KEY` in the project root
+
+### Start the stack
+
+```bash
+docker-compose up --build
+```
+
+This will:
+
+- Build a single image for both backend and frontend
+- Start three services:
+  - `backend`: FastAPI at `http://localhost:8000`
+  - `frontend`: Streamlit at `http://localhost:8501`
+  - `ollama`: Local LLM server at `http://localhost:11434`
+
+Persisted data:
+
+- RAG store files (`rag_store.faiss`, `rag_chunks.json`) and `uploads/` are mounted into the backend container.
+- Ollama models are stored in a Docker volume (`ollama_models`).
+
 ## 💡 Usage Examples
 
 ### Web Interface
@@ -143,15 +171,13 @@ print(result["transcript"]["final_decision"])
 
 ## 🧪 Testing
 
-The project includes comprehensive automated tests:
+The project includes comprehensive automated tests. From the project root, run:
 
-```bash
-# Run all tests
-python -m pytest backend/orchestrator/tests/
-
-# Run specific test file
-python -m unittest backend.orchestrator.tests.test_rag
+```powershell
+./run_tests.ps1
 ```
+
+This script will enter the `backend` directory and execute `python -m pytest`, ensuring proper test discovery.
 
 ### Test Coverage
 

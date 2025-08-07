@@ -11,6 +11,7 @@ import os
 import shutil
 
 from rag_utils import RAGUtils
+from config import settings
 from orchestrator.agent import OrchestratorAgent
 
 app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
@@ -112,6 +113,12 @@ def read_root():
         "endpoints": {
             "/upload/": "Upload documents for RAG ingestion",
             "/orchestrate/": "Run multi-agent orchestrated discussions"
+        },
+        "config": {
+            "OLLAMA_MODEL": settings.OLLAMA_MODEL,
+            "META_PROMPT_PATH": settings.META_PROMPT_PATH,
+            "FAISS_STORE_PATH": settings.FAISS_STORE_PATH,
+            "CHUNKS_PATH": settings.CHUNKS_PATH,
         }
     }
 
@@ -130,7 +137,7 @@ def health_check():
     return {
         "status": "healthy",
         "ollama_available": ollama_available,
-        "rag_store_exists": os.path.exists("rag_store.faiss")
+        "rag_store_exists": os.path.exists(settings.FAISS_STORE_PATH)
     }
 
 if __name__ == "__main__":

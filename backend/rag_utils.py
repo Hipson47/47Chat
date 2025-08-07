@@ -2,42 +2,69 @@
 """
 Core utilities for the RAG service.
 Includes text extraction, chunking, embedding, and FAISS vector store management.
+
+Persistence:
+- FAISS index is saved to 'rag_store.faiss'
+- Chunk texts are saved to 'rag_chunks.json'
+
+This ensures the store is automatically reloaded after application restarts.
 """
 
 import faiss
+import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import fitz  # PyMuPDF
+from pypdf import PdfReader
 import markdown
 import os
+from .config import settings
 
 class RAGUtils:
-    def __init__(self, store_path="rag_store.faiss"):
+    def __init__(self, store_path: str | None = None, chunks_path: str | None = None):
         """
         Initializes the RAG utilities.
         - `store_path`: Path to the FAISS vector store file.
         """
-        self.store_path = store_path
+        self.store_path = store_path or settings.FAISS_STORE_PATH
+        self.chunks_path = chunks_path or settings.CHUNKS_PATH
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.index = None
         self.chunks = []
         self.load_store()
 
-    def load_store(self):
-        """Loads the FAISS index and chunks from disk if they exist."""
+    def load_store(self) -> None:
+        """Loads the FAISS index and chunk texts from disk if they exist."""
         if os.path.exists(self.store_path):
             self.index = faiss.read_index(self.store_path)
-            # In a real application, you'd also persist and load the chunk texts.
-            # For this example, we'll keep it simple.
             print(f"Loaded FAISS index from {self.store_path}")
 
-    def save_store(self):
-        """Saves the FAISS index to disk."""
+        if os.path.exists(self.chunks_path):
+            try:
+                with open(self.chunks_path, "r", encoding="utf-8") as f:
+                    self.chunks = json.load(f)
+                # Ensure chunks is a list of strings
+                if not isinstance(self.chunks, list):
+                    self.chunks = []
+                print(f"Loaded {len(self.chunks)} chunks from {self.chunks_path}")
+            except Exception:
+                # Fallback to empty chunks on error
+                self.chunks = []
+
+    def save_store(self) -> None:
+        """Saves the FAISS index and chunk texts to disk."""
         if self.index:
             faiss.write_index(self.index, self.store_path)
             print(f"Saved FAISS index to {self.store_path}")
 
-    def extract_text(self, file_path, file_type):
+        try:
+            with open(self.chunks_path, "w", encoding="utf-8") as f:
+                json.dump(self.chunks, f, ensure_ascii=False)
+            print(f"Saved {len(self.chunks)} chunks to {self.chunks_path}")
+        except Exception:
+            # Do not crash on chunk save failure
+            pass
+
+    def extract_text(self, file_path: str, file_type: str) -> str:
         """
         Extracts text from a file, preserving line markers.
         - `file_path`: The path to the file.
@@ -45,9 +72,10 @@ class RAGUtils:
         """
         text = ""
         if file_type == ".pdf":
-            doc = fitz.open(file_path)
-            for page_num, page in enumerate(doc):
-                text += f"[Page {page_num + 1}]\n{page.get_text()}\n"
+            reader = PdfReader(file_path)
+            for page_num, page in enumerate(reader.pages):
+                page_text = page.extract_text() or ""
+                text += f"[Page {page_num + 1}]\n{page_text}\n"
         elif file_type == ".md":
             with open(file_path, 'r', encoding='utf-8') as f:
                 html = markdown.markdown(f.read())
@@ -60,7 +88,7 @@ class RAGUtils:
                 text = f.read()
         return text
 
-    def chunk_text(self, text, chunk_size=512, overlap=50):
+    def chunk_text(self, text: str, chunk_size: int = 512, overlap: int = 50) -> list:
         """
         Splits text into smaller chunks.
         - `text`: The text to chunk.
@@ -70,7 +98,7 @@ class RAGUtils:
         # Simple chunking logic
         return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size - overlap)]
 
-    def ingest(self, file_path):
+    def ingest(self, file_path: str) -> None:
         """
         Ingests a single file into the RAG store.
         - `file_path`: The path to the file to ingest.
@@ -91,10 +119,11 @@ class RAGUtils:
                 self.index = faiss.IndexFlatL2(dimension)
             
             self.index.add(np.array(embeddings))
+            # Persist both index and chunks
             self.save_store()
             print(f"Ingested {len(new_chunks)} chunks from {file_path}")
 
-    def retrieve(self, query, k=5):
+    def retrieve(self, query: str, k: int = 5) -> list:
         """
         Retrieves the top-k chunks for a given query.
         - `query`: The query text.

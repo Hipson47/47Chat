@@ -7,9 +7,10 @@ This client is responsible for interacting with the local Ollama model for the d
 import requests
 import json
 from typing import Dict, Any
+from ...config import settings
 
 class LocalOllamaClient:
-    def __init__(self, model_name: str = "llama3", base_url: str = "http://localhost:11434"):
+    def __init__(self, model_name: str | None = None, base_url: str = "http://localhost:11434"):
         """
         Initializes the LocalOllamaClient.
 
@@ -17,7 +18,7 @@ class LocalOllamaClient:
             model_name (str): The name of the Ollama model to use.
             base_url (str): The base URL of the Ollama server.
         """
-        self.model_name = model_name
+        self.model_name = model_name or settings.OLLAMA_MODEL
         self.base_url = base_url
         self.generate_url = f"{base_url}/api/generate"
         print(f"Initialized Ollama client with model: {self.model_name}")

@@ -15,6 +15,9 @@ from .utils.loader import load_meta_prompt
 from .utils.team_assigner import auto_assign_teams
 from .utils.metrics import log_metrics
 from ..rag_utils import RAGUtils
+from ..config import settings
+from langgraph.graph import StateGraph, END
+from typing import TypedDict, Optional
 
 class Alter:
     """
@@ -79,15 +82,19 @@ class OrchestratorAgent:
     The main orchestrator that manages the multi-agent conversation flow.
     """
     
-    def __init__(self, meta_prompt_path: str = "backend/orchestrator/meta_prompt.yaml"):
+    def __init__(self, meta_prompt_path: str | None = None):
         """
         Initializes the OrchestratorAgent.
         """
-        self.meta_prompt = load_meta_prompt(meta_prompt_path)
-        self.ollama_client = LocalOllamaClient()
+        meta_path = meta_prompt_path or settings.META_PROMPT_PATH
+        self.meta_prompt = load_meta_prompt(meta_path)
+        self.ollama_client = LocalOllamaClient(model_name=settings.OLLAMA_MODEL)
         self.gemini_client = GeminiAPIClient()
         self.tool_client = ToolClient()
-        self.rag_utils = RAGUtils()
+        self.rag_utils = RAGUtils(
+            store_path=settings.FAISS_STORE_PATH,
+            chunks_path=settings.CHUNKS_PATH,
+        )
         self.alters = self._initialize_alters()
 
     def _initialize_alters(self) -> Dict[int, Alter]:
@@ -134,106 +141,138 @@ class OrchestratorAgent:
             print(f"Error retrieving RAG context: {e}")
             return ""
 
+    class OrchestrationState(TypedDict, total=False):
+        user_prompt: str
+        use_rag: bool
+        rag_context: str
+        assigned_teams: List[str]
+        participating_alters: List[Alter]
+        phases: List[Dict[str, Any]]
+        conversation_history: List[Dict[str, Any]]
+        final_decision: str
+
+    def _run_phase(
+        self,
+        state: "OrchestratorAgent.OrchestrationState",
+        phase_name: str,
+    ) -> "OrchestratorAgent.OrchestrationState":
+        phase_data = {"phase_name": phase_name, "contributions": []}
+        print(f"\n--- Running Phase: {phase_name} ---")
+
+        for alter in state["participating_alters"]:
+            try:
+                response = alter.respond(
+                    phase=phase_name,
+                    user_prompt=state["user_prompt"],
+                    context=state.get("rag_context", ""),
+                    conversation_history=state.get("conversation_history", []),
+                )
+                contribution = {
+                    "alter_id": alter.id,
+                    "alter_name": alter.name,
+                    "response": response,
+                }
+                phase_data["contributions"].append(contribution)
+                state.setdefault("conversation_history", []).append(
+                    {
+                        "phase": phase_name,
+                        "alter_name": alter.name,
+                        "alter_id": alter.id,
+                        "response": response,
+                    }
+                )
+                print(f"{alter.name}: {response[:100]}...")
+            except Exception as e:
+                print(f"Error getting response from {alter.name}: {e}")
+                contribution = {
+                    "alter_id": alter.id,
+                    "alter_name": alter.name,
+                    "response": f"Error: Could not generate response ({str(e)})",
+                }
+                phase_data["contributions"].append(contribution)
+
+        state.setdefault("phases", []).append(phase_data)
+        return state
+
     def run_round(self, user_prompt: str, use_rag: bool = False) -> Dict[str, Any]:
         """
-        Executes a full round of the orchestration flow.
+        Executes the orchestration flow using a LangGraph state machine.
         Returns a detailed transcript of the multi-agent discussion.
         """
-        # Initialize the conversation transcript
-        transcript = {
+        # Prepare initial state
+        initial_state: OrchestratorAgent.OrchestrationState = {
             "user_prompt": user_prompt,
             "use_rag": use_rag,
-            "rag_context": "",
-            "assigned_teams": [],
+            "rag_context": self.get_rag_context(user_prompt) if use_rag else "",
+            "assigned_teams": auto_assign_teams(user_prompt, self.meta_prompt),
             "phases": [],
+            "conversation_history": [],
             "final_decision": "",
-            "conversation_history": []
         }
-        
-        # Get RAG context if requested
-        if use_rag:
-            transcript["rag_context"] = self.get_rag_context(user_prompt)
-        
-        # Assign teams based on the user prompt
-        assigned_teams = auto_assign_teams(user_prompt, self.meta_prompt)
-        transcript["assigned_teams"] = assigned_teams
-        
-        # Get alters for the assigned teams
-        participating_alters = self.get_alters_for_teams(assigned_teams)
-        
+
+        participating_alters = self.get_alters_for_teams(initial_state["assigned_teams"])
         if not participating_alters:
-            # Fallback to a default alter if none are found
             participating_alters = [alter for alter in self.alters.values()][:3]
-        
-        # Execute each phase
-        phases = self.meta_prompt['meta_prompt']['rounds']['default_sequence']
-        
-        for phase in phases:
-            phase_data = {
-                "phase_name": phase,
-                "contributions": []
-            }
-            
-            print(f"\n--- Running Phase: {phase} ---")
-            
-            # Each alter contributes to this phase
-            for alter in participating_alters:
-                try:
-                    response = alter.respond(
-                        phase=phase,
-                        user_prompt=user_prompt,
-                        context=transcript["rag_context"],
-                        conversation_history=transcript["conversation_history"]
-                    )
-                    
-                    contribution = {
-                        "alter_id": alter.id,
-                        "alter_name": alter.name,
-                        "response": response
-                    }
-                    
-                    phase_data["contributions"].append(contribution)
-                    
-                    # Add to conversation history for context in next phases
-                    transcript["conversation_history"].append({
-                        "phase": phase,
-                        "alter_name": alter.name,
-                        "alter_id": alter.id,
-                        "response": response
-                    })
-                    
-                    print(f"{alter.name}: {response[:100]}...")
-                    
-                except Exception as e:
-                    print(f"Error getting response from {alter.name}: {e}")
-                    contribution = {
-                        "alter_id": alter.id,
-                        "alter_name": alter.name,
-                        "response": f"Error: Could not generate response ({str(e)})"
-                    }
-                    phase_data["contributions"].append(contribution)
-            
-            transcript["phases"].append(phase_data)
-        
-        # Generate final decision using Gemini (moderator)
-        try:
-            decision_prompt = self._build_decision_prompt(transcript)
-            final_decision = self.gemini_client.invoke(decision_prompt)
-            transcript["final_decision"] = final_decision
-        except Exception as e:
-            transcript["final_decision"] = f"Error generating final decision: {str(e)}"
-        
+        initial_state["participating_alters"] = participating_alters
+
+        # Define graph nodes (phase handlers)
+        def brainstorm_node(state: OrchestratorAgent.OrchestrationState):
+            return self._run_phase(state, "Brainstorm")
+
+        def review_node(state: OrchestratorAgent.OrchestrationState):
+            return self._run_phase(state, "CriticalReview")
+
+        def selfverify_node(state: OrchestratorAgent.OrchestrationState):
+            return self._run_phase(state, "SelfVerify")
+
+        def vote_node(state: OrchestratorAgent.OrchestrationState):
+            state = self._run_phase(state, "Vote")
+            # Generate final decision using Gemini (moderator)
+            try:
+                decision_prompt = self._build_decision_prompt(state)  # type: ignore[arg-type]
+                state["final_decision"] = self.gemini_client.invoke(decision_prompt)
+            except Exception as e:
+                state["final_decision"] = f"Error generating final decision: {str(e)}"
+            return state
+
+        # Build state graph
+        graph = StateGraph(OrchestratorAgent.OrchestrationState)
+        graph.add_node("brainstorm", brainstorm_node)
+        graph.add_node("review", review_node)
+        graph.add_node("selfverify", selfverify_node)
+        graph.add_node("vote", vote_node)
+
+        # Edges: Brainstorm -> Review -> (optional SelfVerify) -> Vote
+        graph.set_entry_point("brainstorm")
+        graph.add_edge("brainstorm", "review")
+
+        # Simple conditional: if there are at least 2 contributions, run SelfVerify
+        def to_selfverify(state: OrchestratorAgent.OrchestrationState) -> str:
+            last_phase = state.get("phases", [])[-1] if state.get("phases") else {}
+            contribs = last_phase.get("contributions", []) if last_phase else []
+            return "selfverify" if len(contribs) >= 2 else "vote"
+
+        graph.add_conditional_edges("review", to_selfverify, {"selfverify": "selfverify", "vote": "vote"})
+        graph.add_edge("selfverify", "vote")
+        graph.add_edge("vote", END)
+
+        # Execute graph
+        app = graph.compile()
+        final_state = app.invoke(initial_state)
+
         # Log metrics
-        log_metrics({
-            "user_prompt": user_prompt,
-            "assigned_teams": assigned_teams,
-            "use_rag": use_rag,
-            "num_alters": len(participating_alters),
-            "num_phases": len(phases)
-        })
-        
+        log_metrics(
+            {
+                "user_prompt": user_prompt,
+                "assigned_teams": initial_state["assigned_teams"],
+                "use_rag": use_rag,
+                "num_alters": len(participating_alters),
+                "num_phases": len(final_state.get("phases", [])),
+            }
+        )
+
         print("\nRound completed.")
-        return transcript
+        return final_state  # type: ignore[return-value]
 
     def _build_decision_prompt(self, transcript: Dict[str, Any]) -> str:
         """
