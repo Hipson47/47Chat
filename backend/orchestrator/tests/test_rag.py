@@ -13,8 +13,7 @@ import requests
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-
-from orchestrator.agent import OrchestratorAgent
+from backend.orchestrator.agent import OrchestratorAgent
 from backend.rag_utils import RAGUtils
 
 class TestRAG(unittest.TestCase):
@@ -22,9 +21,9 @@ class TestRAG(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the test environment."""
-        # Start the backend server
+        # Start the backend server on a test port
         cls.backend_process = subprocess.Popen(
-            ["uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8001"],
+            [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8001"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
@@ -47,8 +46,16 @@ class TestRAG(unittest.TestCase):
             os.remove(cls.sample_doc_path)
         if os.path.exists("rag_store.faiss"):
             os.remove("rag_store.faiss")
+        if os.path.exists("rag_chunks.json"):
+            os.remove("rag_chunks.json")
         if os.path.exists("uploads/test_sample_doc.md"):
             os.remove("uploads/test_sample_doc.md")
+        # Remove uploads directory if empty
+        try:
+            if os.path.isdir("uploads") and not os.listdir("uploads"):
+                os.rmdir("uploads")
+        except Exception:
+            pass
 
     def test_1_upload(self):
         """Tests the file upload endpoint."""

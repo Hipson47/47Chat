@@ -14,8 +14,13 @@ from .clients.tool_clients import ToolClient
 from .utils.loader import load_meta_prompt
 from .utils.team_assigner import auto_assign_teams
 from .utils.metrics import log_metrics
-from ..rag_utils import RAGUtils
-from ..config import settings
+# Support both package import (backend.orchestrator.agent) and top-level (orchestrator.agent)
+try:
+    from ..rag_utils import RAGUtils
+    from ..config import settings
+except ImportError:  # When 'backend' isn't the parent package and we're running from backend/ dir
+    from rag_utils import RAGUtils
+    from config import settings
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Optional
 

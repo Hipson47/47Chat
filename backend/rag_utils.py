@@ -107,19 +107,19 @@ class RAGUtils:
         if file_type not in [".pdf", ".md", ".txt"]:
             raise ValueError("Unsupported file type")
 
-        text = self.extract_text(file_path, file_type)
-        new_chunks = self.chunk_text(text)
-        
-        if new_chunks:
+              if new_chunks:
             self.chunks.extend(new_chunks)
             embeddings = self.embedding_model.encode(new_chunks, convert_to_tensor=False)
+            embeddings_array = np.array(embeddings, dtype='float32')
             
             if self.index is None:
-                dimension = embeddings.shape[1]
+                dimension = embeddings_array.shape[1]
                 self.index = faiss.IndexFlatL2(dimension)
             
-            self.index.add(np.array(embeddings))
+            self.index.add(embeddings_array)
             # Persist both index and chunks
+            self.save_store()
+            print(f"Ingested {len(new_chunks)} chunks from {file_path}")h index and chunks
             self.save_store()
             print(f"Ingested {len(new_chunks)} chunks from {file_path}")
 
@@ -127,12 +127,9 @@ class RAGUtils:
         """
         Retrieves the top-k chunks for a given query.
         - `query`: The query text.
-        - `k`: The number of chunks to retrieve.
-        """
-        if not self.index or self.index.ntotal == 0:
-            return []
-        
-        query_embedding = self.embedding_model.encode([query])
+        - `k`: The number of chunks         query_embedding = self.embedding_model.encode([query])
+        query_array = np.array(query_embedding, dtype='float32')
+        distances, indices = self.index.search(query_array, k)edding = self.embedding_model.encode([query])
         distances, indices = self.index.search(np.array(query_embedding), k)
         
         # Filter out invalid indices

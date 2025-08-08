@@ -4,7 +4,7 @@ import json
 from typing import Dict, Any
 
 # Configuration
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "http://127.0.0.1:8000"  # Consider making this configurable via env or query param
 
 def display_orchestration_result(transcript: Dict[str, Any]):
     """

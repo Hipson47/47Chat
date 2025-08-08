@@ -4,21 +4,21 @@ Wrapper for the Gemini API client.
 This client is responsible for interacting with the Gemini 2.5 Pro API for moderator tasks.
 """
 
-import os
-
-class GeminiAPIClient:
+imporclass GeminiAPIClient:
     def __init__(self):
         """
         Initializes the GeminiAPIClient.
-        Requires the GEMINI_API_KEY environment variable to be set.
+        If GEMINI_API_KEY is not set, falls back to a mock mode
+        so that local runs and tests don't crash.
         """
         self.api_key = os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY environment variable not set.")
-        # In a real implementation, you would initialize the Gemini client here.
-        print("Initialized Gemini API client.")
-
-    def invoke(self, prompt):
+        self.enabled = bool(self.api_key)
+        if self.enabled:
+            # In a real implementation, you would initialize the Gemini client here.
+            print("Initialized Gemini API client.")
+        else:
+            print("GEMINI_API_KEY not set. Using mock moderator responses.")
+ini API client.")    def invoke(self, prompt):
         """
         Invokes the Gemini API with a given prompt.
 
@@ -28,6 +28,8 @@ class GeminiAPIClient:
         Returns:
             str: The API's response.
         """
-        # This is a stub implementation.
+        # Mock behavior when API key is not provided.
+        if not getattr(self, "enabled", False):
+            return "[Mock Gemini] Final decision synthesized (no API key provided)."
         print(f"Invoking Gemini API with prompt: {prompt}")
-        return f"Gemini response for: {prompt}"
+        return f"Gemini response for: {prompt}"onse for: {prompt}"

@@ -123,11 +123,9 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# Pyright type checker
-.pyright
-pyrightconfig.json
-
-# Pyre type checker
+# Pyright type che# RAG persistent artifacts
+rag_chunks.json
+rag_store.faissre type checker
 .pyre/
 
 #mypy

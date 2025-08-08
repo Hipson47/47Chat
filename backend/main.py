@@ -10,9 +10,15 @@ from typing import List, Dict, Any
 import os
 import shutil
 
-from rag_utils import RAGUtils
-from config import settings
-from orchestrator.agent import OrchestratorAgent
+# Support both package and script execution imports
+try:
+    from .rag_utils import RAGUtils
+    from .config import settings
+    from .orchestrator.agent import OrchestratorAgent
+except ImportError:
+    from rag_utils import RAGUtils
+    from config import settings
+    from orchestrator.agent import OrchestratorAgent
 
 app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
 
@@ -50,7 +56,8 @@ async def upload_files(files: List[UploadFile] = File(...)):
     ingested_files = []
     
     for file in files:
-        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        safe_name = os.path.basename(file.filename)
+        file_path = os.path.join(UPLOAD_DIR, safe_name)
         
         # Save the uploaded file
         try:
