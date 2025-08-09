@@ -123,9 +123,7 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# Pyright type che# RAG persistent artifacts
-rag_chunks.json
-rag_store.faissre type checker
+# Pyright type checker
 .pyre/
 
 #mypy
@@ -136,5 +134,7 @@ dmypy.json
 # VSCode
 .vscode/ 
 
-# RAG persistent artifacts
+# RAG persistent artifacts (created at runtime)
+rag_store.faiss
 rag_chunks.json
+/uploads/*

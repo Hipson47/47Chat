@@ -116,18 +116,28 @@ The easiest way to run the full stack is with Docker and Docker Compose.
 docker-compose up --build
 ```
 
-This will:
+### What gets built and what gets pulled?
 
-- Build a single image for both backend and frontend
-- Start three services:
-  - `backend`: FastAPI at `http://localhost:8000`
-  - `frontend`: Streamlit at `http://localhost:8501`
-  - `ollama`: Local LLM server at `http://localhost:11434`
+- Two images are built from this repo:
+  - `backend` (FastAPI app) and `frontend` (Streamlit app)
+- One service is pulled from Docker Hub:
+  - `ollama` (official `ollama/ollama` image)
 
-Persisted data:
+### Services
 
-- RAG store files (`rag_store.faiss`, `rag_chunks.json`) and `uploads/` are mounted into the backend container.
-- Ollama models are stored in a Docker volume (`ollama_models`).
+- `backend`: FastAPI at `http://localhost:8000`
+- `frontend`: Streamlit at `http://localhost:8501`
+- `ollama`: Local LLM server at `http://localhost:11434`
+
+### Data & Storage
+
+These artifacts are created at runtime and persisted via bind mounts/volumes:
+
+- `rag_store.faiss` and `rag_chunks.json` – RAG index and chunks file
+- `uploads/` – uploaded documents
+- `ollama_models` volume – model cache for Ollama
+
+They are git-ignored and safe to delete; they will be recreated on demand.
 
 ## 💡 Usage Examples
 
@@ -228,3 +238,11 @@ This project is designed for easy extension and customization. Key areas for con
 ---
 
 **Powered by 47Chat Multi-Agent Orchestrator** | Local LLMs + RAG + Multi-Agent Intelligence
+
+---
+
+### ℹ️ Demo status
+
+- The natural-language orchestrator already routes phases (Brainstorm → CriticalReview → SelfVerify → Vote).
+- The meta-prompt is intentionally exposed for demo and iteration.
+- Role-specific prompts and deeper guardrails are planned next.
