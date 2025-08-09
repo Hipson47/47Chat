@@ -137,8 +137,9 @@ def health_check():
     # Check if Ollama is available
     try:
         agent = get_orchestrator()
+        # Keep health checks snappy to avoid frontend timeouts.
         ollama_available = agent.ollama_client.is_available()
-    except:
+    except Exception:
         ollama_available = False
     
     return {

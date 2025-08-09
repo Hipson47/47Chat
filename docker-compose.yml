@@ -14,7 +14,7 @@ services:
       - ./rag_store.faiss:/app/rag_store.faiss
       - ./rag_chunks.json:/app/rag_chunks.json
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - ollama
 

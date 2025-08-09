@@ -1,6 +1,6 @@
 # 47Chat - AI Multi-Agent Orchestrator
 
-Welcome to 47Chat, an advanced AI-driven orchestrator bot designed for intelligent multi-agent task execution. This unified application combines FastAPI backend services, local Ollama LLM integration, Gemini 2.5 Pro API, and Retrieval-Augmented Generation (RAG) to create a sophisticated multi-agent discussion system.
+Welcome to 47Chat, an advanced AI-driven orchestrator bot designed for intelligent multi-agent task execution. This unified application combines FastAPI backend services, local Ollama LLM integration, optional OpenAI API, and Retrieval-Augmented Generation (RAG) to create a sophisticated multi-agent discussion system.
 
 The orchestrator coordinates specialized AI "alters" (experts) organized into teams, running structured discussions through multiple phases (Brainstorm, CriticalReview, SelfVerify, Vote) to provide comprehensive, well-reasoned responses to complex questions.
 
@@ -10,7 +10,7 @@ The orchestrator coordinates specialized AI "alters" (experts) organized into te
 - **Phase-Based Discussions**: Structured conversation flow through Brainstorm → CriticalReview → SelfVerify → Vote phases
 - **Retrieval-Augmented Generation (RAG)**: Ingests and indexes documents (`.pdf`, `.md`, `.txt`) using FAISS vector store for contextually relevant responses
 - **Local LLM Integration**: Uses Ollama for running models locally on your hardware (optimized for RTX 4060 Ti)
-- **Gemini Integration**: Leverages Gemini 2.5 Pro for final decision synthesis and moderation
+- **OpenAI Integration (optional)**: Uses OpenAI for final decision synthesis and moderation when `OPENAI_API_KEY` is provided
 - **Unified API**: Single FastAPI backend serving both RAG and orchestration functionality
 - **Interactive Frontend**: Streamlit-based UI for visualizing multi-agent discussions and results
 - **Adaptive Capabilities**: Self-improvement, emergency handling, and performance optimization
@@ -45,7 +45,7 @@ The application follows a unified architecture where all components are integrat
 3. **Question Processing**: User questions are sent to the `/orchestrate/` endpoint
 4. **Team Assignment**: The orchestrator analyzes the question and assigns relevant expert teams
 5. **Multi-Phase Discussion**: Each assigned agent contributes through structured phases
-6. **Final Decision**: Gemini synthesizes all contributions into a final recommendation
+6. **Final Decision**: OpenAI (or mock mode if no key) synthesizes all contributions into a final recommendation
 7. **Visualization**: The Streamlit frontend displays the complete discussion transcript
 
 ## 🛠️ Setup and Usage
@@ -55,9 +55,9 @@ The application follows a unified architecture where all components are integrat
 - **Python 3.10+**
 - **NVIDIA GPU**: RTX 4060 Ti or better recommended for local Ollama models
 - **Ollama**: Install from [ollama.com](https://ollama.com)
-- **API Keys**: Create a `.env` file with:
+- **API Keys**: Create a `.env` file with (optional if using only Ollama):
   ```
-  GEMINI_API_KEY="your_gemini_api_key_here"
+  OPENAI_API_KEY="your_openai_api_key_here"
   ```
 
 ### Installation
@@ -105,7 +105,7 @@ The easiest way to run the full stack is with Docker and Docker Compose.
 ### Prerequisites
 
 - Docker Desktop (with Compose) installed and running
-- Optional: `.env` file with `GEMINI_API_KEY` in the project root
+- Optional: `.env` file with `OPENAI_API_KEY` in the project root
 
 ### Start the stack
 

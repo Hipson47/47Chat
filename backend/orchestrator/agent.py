@@ -9,7 +9,7 @@ import yaml
 import json
 from typing import List, Dict, Any
 from .clients.ollama_client import LocalOllamaClient
-from .clients.gemini_client import GeminiAPIClient
+from .clients.openai_client import OpenAIModeratorClient
 from .clients.tool_clients import ToolClient
 from .utils.loader import load_meta_prompt
 from .utils.team_assigner import auto_assign_teams
@@ -94,7 +94,7 @@ class OrchestratorAgent:
         meta_path = meta_prompt_path or settings.META_PROMPT_PATH
         self.meta_prompt = load_meta_prompt(meta_path)
         self.ollama_client = LocalOllamaClient(model_name=settings.OLLAMA_MODEL)
-        self.gemini_client = GeminiAPIClient()
+        self.moderator_client = OpenAIModeratorClient()
         self.tool_client = ToolClient()
         self.rag_utils = RAGUtils(
             store_path=settings.FAISS_STORE_PATH,
@@ -232,10 +232,10 @@ class OrchestratorAgent:
 
         def vote_node(state: OrchestratorAgent.OrchestrationState):
             state = self._run_phase(state, "Vote")
-            # Generate final decision using Gemini (moderator)
+            # Generate final decision using OpenAI moderator
             try:
                 decision_prompt = self._build_decision_prompt(state)  # type: ignore[arg-type]
-                state["final_decision"] = self.gemini_client.invoke(decision_prompt)
+                state["final_decision"] = self.moderator_client.invoke(decision_prompt)
             except Exception as e:
                 state["final_decision"] = f"Error generating final decision: {str(e)}"
             return state
@@ -265,6 +265,16 @@ class OrchestratorAgent:
         app = graph.compile()
         final_state = app.invoke(initial_state)
 
+        # Ensure the returned transcript is JSON-serializable.
+        # The internal state contains Python objects (e.g., `Alter`) that
+        # FastAPI cannot serialize directly. We strip those out as they are
+        # not used by the frontend and keep only primitive structures.
+        serializable_state: Dict[str, Any] = {
+            key: value
+            for key, value in final_state.items()  # type: ignore[union-attr]
+            if key != "participating_alters"
+        }
+
         # Log metrics
         log_metrics(
             {
@@ -272,16 +282,16 @@ class OrchestratorAgent:
                 "assigned_teams": initial_state["assigned_teams"],
                 "use_rag": use_rag,
                 "num_alters": len(participating_alters),
-                "num_phases": len(final_state.get("phases", [])),
+                "num_phases": len(serializable_state.get("phases", [])),
             }
         )
 
         print("\nRound completed.")
-        return final_state  # type: ignore[return-value]
+        return serializable_state  # type: ignore[return-value]
 
     def _build_decision_prompt(self, transcript: Dict[str, Any]) -> str:
         """
-        Builds a prompt for the moderator (Gemini) to make the final decision.
+        Builds a prompt for the moderator (OpenAI) to make the final decision.
         """
         prompt = f"""You are the Moderator for a multi-agent discussion. Review the following discussion and provide a final decision or recommendation.
 

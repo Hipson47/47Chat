@@ -14,3 +14,5 @@ pyyaml
 streamlit
 langgraph
 pytest
+slowapi
+openai

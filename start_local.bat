@@ -7,8 +7,23 @@ REM This script runs setup, then launches backend and frontend in separate termi
 REM Move to script directory
 cd /d "%~dp0"
 
+REM Locate PowerShell (Windows PowerShell or PowerShell 7)
+set "PWSH_CMD=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+if not exist "%PWSH_CMD%" (
+  for /f "delims=" %%I in ('where pwsh 2^>nul') do set "PWSH_CMD=%%I"
+)
+if not exist "%PWSH_CMD%" (
+  for /f "delims=" %%I in ('where powershell 2^>nul') do set "PWSH_CMD=%%I"
+)
+if not exist "%PWSH_CMD%" (
+  echo [ERROR] PowerShell not found in PATH. Please install PowerShell or run setup.ps1 manually.
+  echo Try: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup.ps1
+  pause
+  exit /b 1
+)
+
 REM 1) Run setup (creates .venv, installs deps, optional Ollama setup)
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
+"%PWSH_CMD%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
 if errorlevel 1 (
   echo [ERROR] Setup failed. Fix issues and re-run.
   pause
@@ -41,6 +56,6 @@ echo [INFO] Frontend running at http://localhost:8501
 echo.
 echo Press any key to optionally open a tests window...
 pause >nul
-start "47Chat Tests" cmd /k "powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0run_tests.ps1\""
+start "47Chat Tests" cmd /k "\"%PWSH_CMD%\" -NoProfile -ExecutionPolicy Bypass -File \"%~dp0run_tests.ps1\""
 
 exit /b 0

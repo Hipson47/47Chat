@@ -5,7 +5,7 @@
 # 2) Create virtual environment at .venv
 # 3) Install dependencies from backend/requirements.txt
 # 4) Check Ollama service; guide installation and attempt "ollama pull llama3"
-# 5) Create .env from .env.example and prompt for GEMINI_API_KEY
+# 5) Create .env from .env.example and prompt for OPENAI_API_KEY
 # 6) Print instructions to run backend and frontend
 
 $ErrorActionPreference = 'Stop'
@@ -93,58 +93,56 @@ if (Test-Ollama) {
   }
 }
 
-# 5) Create .env from .env.example and prompt for GEMINI_API_KEY
+# 5) Create .env from .env.example and prompt for OPENAI_API_KEY
 $envExample = @(
   "# 47Chat environment variables",
-  "# Provide your Gemini API key used by the moderator agent",
-  "GEMINI_API_KEY=",
+  "# Provide your OpenAI API key used by the moderator agent (optional)",
+  "OPENAI_API_KEY=",
   "",
   "# Optional overrides",
   "# OLLAMA_MODEL=llama3"
 )
 
-if (-not (Test-Path '.env.example')) {
-  Set-Content -Path '.env.example' -Value $envExample -Encoding UTF8
-  Write-Host "Created .env.example" -ForegroundColor Green
-}
+Set-Content -Path '.env.example' -Value $envExample -Encoding UTF8
+Write-Host "Refreshed .env.example" -ForegroundColor Green
 
 if (-not (Test-Path '.env')) {
   Copy-Item '.env.example' '.env'
   Write-Host "Created .env from template (.env.example)" -ForegroundColor Green
 }
 
-# Prompt user to set GEMINI_API_KEY
+# Prompt user to set OPENAI_API_KEY
 try {
   $currentEnv = Get-Content '.env' -ErrorAction Stop
 } catch { $currentEnv = @() }
 
 $needsKey = $true
 foreach ($line in $currentEnv) {
-  if ($line -match '^GEMINI_API_KEY=') {
-    $value = $line.Substring('GEMINI_API_KEY='.Length)
+  if ($line -match '^OPENAI_API_KEY=') {
+    $value = $line.Substring('OPENAI_API_KEY='.Length)
     if ($value -and $value.Trim().Length -gt 0) { $needsKey = $false }
   }
 }
 
 if ($needsKey) {
-  $key = Read-Host "Enter your GEMINI_API_KEY (press Enter to skip)"
+  $key = Read-Host "Enter your OPENAI_API_KEY (press Enter to skip)"
   if ($key) {
     $updated = @()
     $replaced = $false
     foreach ($line in $currentEnv) {
-      if ($line -match '^GEMINI_API_KEY=') {
-        $updated += "GEMINI_API_KEY=$key"
+      if ($line -match '^OPENAI_API_KEY=') {
+        $updated += "OPENAI_API_KEY=$key"
         $replaced = $true
       } else {
         $updated += $line
       }
     }
-    if (-not $replaced) { $updated += "GEMINI_API_KEY=$key" }
+    if (-not $replaced) { $updated += "OPENAI_API_KEY=$key" }
     Set-Content '.env' -Value $updated -Encoding UTF8
-    $env:GEMINI_API_KEY = $key
-    Write-Host "Saved GEMINI_API_KEY to .env and set in current session." -ForegroundColor Green
+    $env:OPENAI_API_KEY = $key
+    Write-Host "Saved OPENAI_API_KEY to .env and set in current session." -ForegroundColor Green
   } else {
-    Write-Warning "GEMINI_API_KEY not set. Gemini-based moderation may not function until you set it."
+    Write-Warning "OPENAI_API_KEY not set. OpenAI-based moderation will use mock responses until you set it."
   }
 }
 
