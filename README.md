@@ -56,8 +56,11 @@ The application follows a unified architecture where all components are integrat
 - **NVIDIA GPU**: RTX 4060 Ti or better recommended for local Ollama models
 - **Ollama**: Install from [ollama.com](https://ollama.com)
 - **API Keys**: Create a `.env` file with (optional if using only Ollama):
-  ```
+  ```env
   OPENAI_API_KEY="your_openai_api_key_here"
+  OPENAI_MODEL=gpt-5-nano
+  # If chcesz, aby alters używali OpenAI zamiast Ollama:
+  # ALTERS_LLM_PROVIDER=openai
   ```
 
 ### Installation

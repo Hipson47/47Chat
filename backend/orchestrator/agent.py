@@ -9,6 +9,7 @@ import yaml
 import json
 from typing import List, Dict, Any
 from .clients.ollama_client import LocalOllamaClient
+from .clients.openai_chat_client import OpenAIChatClient
 from .clients.openai_client import OpenAIModeratorClient
 from .clients.tool_clients import ToolClient
 from .utils.loader import load_meta_prompt
@@ -29,13 +30,14 @@ class Alter:
     Represents a single AI alter/agent with specific competencies and personality.
     """
     
-    def __init__(self, alter_data: Dict[str, Any], ollama_client: LocalOllamaClient):
+    def __init__(self, alter_data: Dict[str, Any], ollama_client: LocalOllamaClient | None = None, openai_client: OpenAIChatClient | None = None):
         self.id = alter_data.get('id')
         self.name = alter_data.get('name', f'Alter {self.id}')
         self.priority = alter_data.get('priority', 'Medium')
         self.competencies = alter_data.get('competencies', '')
         self.examples = alter_data.get('examples', [])
         self.ollama_client = ollama_client
+        self.openai_client = openai_client
     
     def build_prompt(self, phase: str, user_prompt: str, context: str = "", conversation_history: List[Dict] = None) -> str:
         """
@@ -79,7 +81,12 @@ Based on your expertise and the current phase, provide your contribution to the 
         Gets a response from this alter for the given phase and context.
         """
         prompt = self.build_prompt(phase, user_prompt, context, conversation_history)
-        response = self.ollama_client.invoke(prompt)
+        # Route to selected provider
+        provider = settings.ALTERS_LLM_PROVIDER.lower()
+        if provider == "openai" and self.openai_client is not None:
+            response = self.openai_client.invoke(prompt)
+        else:
+            response = self.ollama_client.invoke(prompt)  # type: ignore[union-attr]
         return response
 
 class OrchestratorAgent:
@@ -94,6 +101,7 @@ class OrchestratorAgent:
         meta_path = meta_prompt_path or settings.META_PROMPT_PATH
         self.meta_prompt = load_meta_prompt(meta_path)
         self.ollama_client = LocalOllamaClient(model_name=settings.OLLAMA_MODEL)
+        self.openai_alter_client = OpenAIChatClient()
         self.moderator_client = OpenAIModeratorClient()
         self.tool_client = ToolClient()
         self.rag_utils = RAGUtils(
@@ -110,7 +118,11 @@ class OrchestratorAgent:
         for alter_data in self.meta_prompt.get('alters', []):
             alter_id = alter_data.get('id')
             if alter_id is not None:
-                alters[alter_id] = Alter(alter_data, self.ollama_client)
+                alters[alter_id] = Alter(
+                    alter_data,
+                    ollama_client=self.ollama_client,
+                    openai_client=self.openai_alter_client,
+                )
         return alters
 
     def get_alters_for_teams(self, team_names: List[str]) -> List[Alter]:

@@ -17,6 +17,14 @@ class Settings(BaseSettings):
 
     # LLM / Orchestration
     OLLAMA_MODEL: str = Field(default="llama3", description="Default Ollama model name")
+    OPENAI_MODEL: str = Field(
+        default="gpt-5-nano",
+        description="Default OpenAI model name used by moderator/agents when OpenAI is selected",
+    )
+    ALTERS_LLM_PROVIDER: str = Field(
+        default="ollama",
+        description="Provider for alter agents: 'ollama' or 'openai'",
+    )
 
     # Paths
     META_PROMPT_PATH: str = Field(
