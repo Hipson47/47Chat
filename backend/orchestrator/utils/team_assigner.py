@@ -16,9 +16,21 @@ def auto_assign_teams(prompt, meta_prompt):
     """
     assigned_teams = []
     prompt_lower = prompt.lower()
-    
+
+    # Support both legacy and new meta-prompt shapes
+    teams_section = meta_prompt.get('teams')
+    if teams_section is None and isinstance(meta_prompt.get('meta_prompt'), dict):
+        teams_section = meta_prompt['meta_prompt'].get('teams')
+    if teams_section is None:
+        # Graceful fallback: if teams missing, default to core set
+        return [
+            "backend_team",
+            "integration_team",
+            "operations_team",
+        ]
+
     # Simple keyword matching based on team descriptions
-    for team_name, team_data in meta_prompt['teams'].items():
+    for team_name, team_data in teams_section.items():
         if 'description' in team_data:
             # Using simple keywords from description for assignment
             keywords = [kw for kw in team_data['description'].split() if len(kw) > 3]
@@ -30,7 +42,7 @@ def auto_assign_teams(prompt, meta_prompt):
         fallback_teams = [
             "backend_team",
             "integration_team",
-            "operations_team"
+            "operations_team",
         ]
         assigned_teams.extend(fallback_teams)
 

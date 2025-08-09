@@ -107,6 +107,7 @@ async def orchestrate_discussion(request: OrchestrationRequest) -> Dict[str, Any
         }
         
     except Exception as e:
+        # Provide more context to frontend including quick hint when 'teams' path missing
         raise HTTPException(status_code=500, detail=f"Orchestration failed: {str(e)}")
 
 @app.get("/")

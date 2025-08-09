@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import time
 from typing import Dict, Any
 
 # Configuration
@@ -65,6 +66,25 @@ def check_backend_health():
     except requests.exceptions.RequestException as e:
         return {"status": "unreachable", "error": str(e)}
 
+def wait_until_backend_ready(max_wait_seconds: int = 45) -> Dict[str, Any]:
+    """Polls backend health until healthy or timeout, showing a loading placeholder."""
+    placeholder = st.empty()
+    start = time.time()
+    while True:
+        status = check_backend_health()
+        elapsed = int(time.time() - start)
+        with placeholder.container():
+            st.info(f"Starting backend... ({elapsed}s)")
+            if status.get("status") == "healthy":
+                st.success("Backend is healthy")
+                return status
+            st.progress(min(elapsed / max_wait_seconds, 1.0))
+        if status.get("status") == "healthy":
+            return status
+        if elapsed >= max_wait_seconds:
+            return status
+        time.sleep(1.5)
+
 def main():
     """Main Streamlit application function."""
     st.set_page_config(
@@ -86,8 +106,11 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
         
-        # Backend health check
+        # Backend health check with bootstrap wait
         health_status = check_backend_health()
+        if health_status.get("status") != "healthy":
+            with st.spinner("Waiting for backend to become healthy..."):
+                health_status = wait_until_backend_ready()
         if health_status.get("status") == "healthy":
             st.success("✅ Backend is healthy")
             if health_status.get("ollama_available"):
