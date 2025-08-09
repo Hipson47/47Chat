@@ -41,7 +41,6 @@ class OpenAIChatClient:
                     {"role": "system", "content": system or "You are a helpful expert."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.7,
             )
             content = resp.choices[0].message.content or ""
             return content.strip()
@@ -50,7 +49,6 @@ class OpenAIChatClient:
                 resp = self._client.responses.create(
                     model=self.model,
                     input=(system + "\n\n" if system else "") + prompt,
-                    temperature=0.7,
                 )
                 if hasattr(resp, "output_text") and resp.output_text:
                     return str(resp.output_text).strip()

@@ -27,7 +27,8 @@ class RAGUtils:
         """
         self.store_path = store_path or settings.FAISS_STORE_PATH
         self.chunks_path = chunks_path or settings.CHUNKS_PATH
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Lazy-load model on first use to reduce startup time and avoid import failures
+        self._embedding_model = None
         self.index = None
         self.chunks = []
         self.load_store()
@@ -52,7 +53,7 @@ class RAGUtils:
 
     def save_store(self) -> None:
         """Saves the FAISS index and chunk texts to disk."""
-        if self.index:
+        if self.index is not None:
             faiss.write_index(self.index, self.store_path)
             print(f"Saved FAISS index to {self.store_path}")
 
@@ -104,7 +105,7 @@ class RAGUtils:
         - `file_path`: The path to the file to ingest.
         """
         file_type = os.path.splitext(file_path)[1]
-        if file_type not in [".pdf", ".md", ".txt"]:
+        if file_type.lower() not in [".pdf", ".md", ".txt"]:
             raise ValueError("Unsupported file type")
         # Extract and chunk text
         text = self.extract_text(file_path, file_type)
@@ -112,7 +113,10 @@ class RAGUtils:
 
         if new_chunks:
             self.chunks.extend(new_chunks)
-            embeddings = self.embedding_model.encode(new_chunks, convert_to_tensor=False)
+            # Initialize embedding model once
+            if self._embedding_model is None:
+                self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            embeddings = self._embedding_model.encode(new_chunks, convert_to_tensor=False)
             embeddings_array = np.array(embeddings, dtype="float32")
 
             if self.index is None:
@@ -133,7 +137,9 @@ class RAGUtils:
         if not self.index or self.index.ntotal == 0:
             return []
 
-        query_embedding = self.embedding_model.encode([query])
+        if self._embedding_model is None:
+            self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        query_embedding = self._embedding_model.encode([query])
         query_array = np.array(query_embedding, dtype="float32")
         distances, indices = self.index.search(query_array, k)
         # Filter out invalid indices

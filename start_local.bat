@@ -42,12 +42,12 @@ if not exist "%VENV_PY%" (
 REM 3) Launch backend (Uvicorn) in new window
 start "47Chat Backend" cmd /k ""%VENV_PY%" -m uvicorn backend.main:app --host 127.0.0.1 --port 8000"
 
-REM 4) Launch frontend (Streamlit) in new window
-start "47Chat Frontend" cmd /k ""%VENV_PY%" -m streamlit run frontend/app.py --server.port 8501 --server.address 127.0.0.1"
+REM 4) Launch frontend (Streamlit) in new window (headless to avoid auto-opening duplicate browser tabs)
+start "47Chat Frontend" cmd /k ""%VENV_PY%" -m streamlit run frontend/app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true"
 
-REM 5) Open browser tabs for convenience
+REM 5) Open a single browser tab for the frontend (wait briefly to ensure server binds)
+timeout /t 2 >nul
 start "" http://localhost:8501
-start "" http://localhost:8000/docs
 
 echo.
 echo [INFO] Backend running at http://localhost:8000 (Docs: /docs)

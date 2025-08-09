@@ -110,19 +110,68 @@ class OrchestratorAgent:
         )
         self.alters = self._initialize_alters()
 
+    def _get_teams_section(self) -> Dict[str, Any]:
+        """Return teams section from either legacy or new meta-prompt layout."""
+        if isinstance(self.meta_prompt, dict):
+            if "teams" in self.meta_prompt:
+                return self.meta_prompt.get("teams", {})
+            inner = self.meta_prompt.get("meta_prompt")
+            if isinstance(inner, dict):
+                return inner.get("teams", {})
+        return {}
+
     def _initialize_alters(self) -> Dict[int, Alter]:
         """
         Initialize all alters from the meta-prompt configuration.
         """
-        alters = {}
-        for alter_data in self.meta_prompt.get('alters', []):
-            alter_id = alter_data.get('id')
-            if alter_id is not None:
+        alters: Dict[int, Alter] = {}
+
+        explicit_alters = self.meta_prompt.get('alters') if isinstance(self.meta_prompt, dict) else None
+        if isinstance(explicit_alters, list) and explicit_alters:
+            for alter_data in explicit_alters:
+                alter_id = alter_data.get('id')
+                if alter_id is not None:
+                    alters[alter_id] = Alter(
+                        alter_data,
+                        ollama_client=self.ollama_client,
+                        openai_client=self.openai_alter_client,
+                    )
+            return alters
+
+        teams = self._get_teams_section()
+        for team_name, team_data in teams.items():
+            team_desc = team_data.get('description', team_name)
+            for alter_id in team_data.get('alters', []):
+                if alter_id in alters:
+                    continue
+                synthetic = {
+                    'id': alter_id,
+                    'name': f"{team_name.replace('_',' ').title()} Specialist {alter_id}",
+                    'priority': 'Medium',
+                    'competencies': team_desc,
+                    'examples': [],
+                }
                 alters[alter_id] = Alter(
-                    alter_data,
+                    synthetic,
                     ollama_client=self.ollama_client,
                     openai_client=self.openai_alter_client,
                 )
+
+        if not alters:
+            for alter_id in range(1, 4):
+                synthetic = {
+                    'id': alter_id,
+                    'name': f'Generalist {alter_id}',
+                    'priority': 'Medium',
+                    'competencies': 'General software engineering and architecture.',
+                    'examples': [],
+                }
+                alters[alter_id] = Alter(
+                    synthetic,
+                    ollama_client=self.ollama_client,
+                    openai_client=self.openai_alter_client,
+                )
+
         return alters
 
     def get_alters_for_teams(self, team_names: List[str]) -> List[Alter]:
@@ -130,7 +179,7 @@ class OrchestratorAgent:
         Get all alters that belong to the specified teams.
         """
         alter_ids = set()
-        teams = self.meta_prompt.get('teams', {})
+        teams = self._get_teams_section()
         
         for team_name in team_names:
             if team_name in teams:

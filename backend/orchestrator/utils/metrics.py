@@ -5,8 +5,9 @@ Utility for logging metrics and handling adaptive scheduling.
 
 import json
 import time
+from typing import Dict, Any, List
 
-def log_metrics(data):
+def log_metrics(data: Dict[str, Any]) -> None:
     """
     Logs metrics to a file.
 
@@ -17,11 +18,11 @@ def log_metrics(data):
         "timestamp": time.time(),
         "data": data
     }
-    with open("metrics.log", "a") as f:
+    with open("metrics.log", "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry) + "\n")
     print(f"Logged metrics: {data}")
 
-def check_adaptive_scheduling(metrics):
+def check_adaptive_scheduling(metrics: Dict[str, Any]) -> List[str]:
     """
     Checks if adaptive scheduling rules should be applied.
 

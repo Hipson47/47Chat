@@ -47,7 +47,6 @@ class OpenAIModeratorClient:
                     {"role": "system", "content": "You are a helpful moderator that synthesizes a final decision."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.3,
             )
             content = resp.choices[0].message.content or ""
             return content.strip()
@@ -56,7 +55,6 @@ class OpenAIModeratorClient:
                 resp = self._client.responses.create(
                     model=self.model,
                     input=prompt,
-                    temperature=0.3,
                     # Avoid passing max_* tokens to be provider-agnostic
                 )
                 # openai>=1.0 exposes a convenience property
