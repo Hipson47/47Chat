@@ -6,6 +6,7 @@ phase execution, model/tool invocation, and metrics logging.
 """
 
 import yaml
+import time
 import json
 from typing import List, Dict, Any
 from .clients.ollama_client import LocalOllamaClient
@@ -14,7 +15,7 @@ from .clients.openai_client import OpenAIModeratorClient
 from .clients.tool_clients import ToolClient
 from .utils.loader import load_meta_prompt
 from .utils.team_assigner import auto_assign_teams
-from .utils.metrics import log_metrics
+from .utils.metrics import log_metrics, record_round_latency
 # Support both package import (backend.orchestrator.agent) and top-level (orchestrator.agent)
 try:
     from ..rag_utils import RAGUtils
@@ -94,7 +95,7 @@ class OrchestratorAgent:
     The main orchestrator that manages the multi-agent conversation flow.
     """
     
-    def __init__(self, meta_prompt_path: str | None = None):
+    def __init__(self, meta_prompt_path: str | None = None, rag_client: Optional[object] = None):
         """
         Initializes the OrchestratorAgent.
         """
@@ -104,7 +105,9 @@ class OrchestratorAgent:
         self.openai_alter_client = OpenAIChatClient()
         self.moderator_client = OpenAIModeratorClient()
         self.tool_client = ToolClient()
-        self.rag_utils = RAGUtils(
+        # Allow dependency injection of a lightweight RAG client for tests.
+        # Default to the real RAGUtils implementation in production.
+        self.rag_client = rag_client or RAGUtils(
             store_path=settings.FAISS_STORE_PATH,
             chunks_path=settings.CHUNKS_PATH,
         )
@@ -193,7 +196,8 @@ class OrchestratorAgent:
         Retrieves context from the RAG store.
         """
         try:
-            results = self.rag_utils.retrieve(query, k)
+            # Abstract over the rag client to facilitate fast test doubles
+            results = self.rag_client.retrieve(query, k)  # type: ignore[attr-defined]
             if not results:
                 return ""
 
@@ -322,13 +326,11 @@ class OrchestratorAgent:
         graph.add_edge("selfverify", "vote")
         graph.add_edge("vote", END)
 
-        # Execute graph and track latency
-        import time as _time
-        start_ts = _time.time()
+        # Execute graph and time the full round
+        start_time = time.time()  # type: ignore[name-defined]
         app = graph.compile()
         final_state = app.invoke(initial_state)
-        end_ts = _time.time()
-        round_latency_ms = int((end_ts - start_ts) * 1000)
+        end_time = time.time()  # type: ignore[name-defined]
 
         # Ensure the returned transcript is JSON-serializable.
         # The internal state contains Python objects (e.g., `Alter`) that
@@ -341,15 +343,20 @@ class OrchestratorAgent:
         }
 
         # Log metrics
-        log_payload = {
-            "user_prompt": user_prompt,
-            "assigned_teams": initial_state["assigned_teams"],
-            "use_rag": use_rag,
-            "num_alters": len(participating_alters),
-            "num_phases": len(serializable_state.get("phases", [])),
-            "latency_ms": round_latency_ms,
-        }
-        log_metrics(log_payload)
+        log_metrics(
+            {
+                "user_prompt": user_prompt,
+                "assigned_teams": initial_state["assigned_teams"],
+                "use_rag": use_rag,
+                "num_alters": len(participating_alters),
+                "num_phases": len(serializable_state.get("phases", [])),
+            }
+        )
+        # Record latency
+        try:
+            record_round_latency(max(0.0, float(end_time - start_time)))
+        except Exception:
+            pass
 
         print("\nRound completed.")
         return serializable_state  # type: ignore[return-value]

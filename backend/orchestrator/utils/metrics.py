@@ -1,158 +1,108 @@
 # orchestrator/utils/metrics.py
 """
-Utility for logging metrics and exposing Prometheus-compatible gauges/counters.
+Utility for logging and exporting orchestrator metrics.
 
-This module serves two purposes:
-1) Persist human-readable metrics to a simple newline-delimited JSON log file
-2) Maintain Prometheus metrics that can be scraped via the /metrics endpoint
-
-It is intentionally import-light so it can be used by both API and orchestrator layers.
+This module acts as the single place where we bridge internal metrics to
+Prometheus exposition, while preserving the lightweight existing file log.
 """
 
 from __future__ import annotations
 
 import json
 import time
-from typing import Any, Dict, List
+from typing import Dict, Any, List
 
-try:
-    # Prometheus is optional until the /metrics endpoint is requested
-    from prometheus_client import Counter, Gauge, Histogram
-except Exception:  # pragma: no cover - allow running even if not installed in some contexts
-    Counter = Gauge = Histogram = None  # type: ignore[assignment]
+try:  # Prometheus is optional in some dev environments
+    from prometheus_client import Counter, Histogram
+except Exception:  # pragma: no cover - fall back when dependency is missing
+    Counter = None  # type: ignore
+    Histogram = None  # type: ignore
 
-# -------------------------
-# Prometheus metric objects
-# -------------------------
 
-ROUND_LATENCY_SECONDS = (
+# Prometheus metrics (created lazily when dependency is available)
+ORCHESTRATOR_ROUNDS = (
+    Counter("orchestrator_rounds_total", "Total orchestrator rounds executed")
+    if Counter
+    else None
+)
+ORCHESTRATOR_PASSES = (
+    Counter(
+        "orchestrator_passes_total",
+        "Total number of passes/phases executed across rounds",
+    )
+    if Counter
+    else None
+)
+ORCHESTRATOR_TOKENS = (
+    Counter("orchestrator_tokens_total", "Total tokens used across all LLM calls")
+    if Counter
+    else None
+)
+ORCHESTRATOR_ROUND_LATENCY = (
     Histogram(
         "orchestrator_round_latency_seconds",
-        "Latency of orchestration rounds in seconds",
+        "Orchestrator round latency in seconds",
         buckets=(
-            0.05,
             0.1,
             0.25,
             0.5,
             1.0,
-            2.0,
+            2.5,
             5.0,
             10.0,
             30.0,
             60.0,
+            120.0,
         ),
     )
-    if Histogram is not None
+    if Histogram
     else None
 )
-
-TOKENS_USED_TOTAL = (
-    Counter(
-        "orchestrator_tokens_used_total",
-        "Total tokens used across orchestration rounds",
-    )
-    if Counter is not None
-    else None
-)
-
-PASSES_COUNT_GAUGE = (
-    Gauge(
-        "orchestrator_passes_count",
-        "Number of passes (phases) in the most recently completed round",
-    )
-    if Gauge is not None
-    else None
-)
-
-ROUNDS_TOTAL = (
-    Counter("orchestrator_rounds_total", "Total number of completed orchestration rounds")
-    if Counter is not None
-    else None
-)
-
-
-def record_round_latency_seconds(latency_seconds: float) -> None:
-    """Record a single round latency observation in seconds.
-
-    Args:
-        latency_seconds: Duration of the orchestration round in seconds.
-    """
-    if ROUND_LATENCY_SECONDS is not None:
-        ROUND_LATENCY_SECONDS.observe(latency_seconds)
-
-
-def set_passes_count(passes_count: int) -> None:
-    """Set the gauge for number of passes (phases) in the last round."""
-    if PASSES_COUNT_GAUGE is not None:
-        PASSES_COUNT_GAUGE.set(float(passes_count))
-
-
-def add_tokens_used(tokens_used: int) -> None:
-    """Increment the cumulative tokens-used counter if available."""
-    if TOKENS_USED_TOTAL is not None and tokens_used >= 0:
-        TOKENS_USED_TOTAL.inc(tokens_used)
-
-
-def _maybe_update_prom_metrics(data: Dict[str, Any]) -> None:
-    """Update Prometheus metrics based on keys present in the provided data.
-
-    Supported keys:
-      - latency_ms: Round duration in milliseconds
-      - tokens_used: Integer tokens used in the round
-      - num_phases | passes_count: Number of phases executed in the round
-    """
-    try:
-        if "latency_ms" in data and isinstance(data["latency_ms"], (int, float)):
-            record_round_latency_seconds(float(data["latency_ms"]) / 1000.0)
-        if "tokens_used" in data and isinstance(data["tokens_used"], int):
-            add_tokens_used(int(data["tokens_used"]))
-        passes = None
-        if "num_phases" in data and isinstance(data["num_phases"], int):
-            passes = int(data["num_phases"])
-        elif "passes_count" in data and isinstance(data["passes_count"], int):
-            passes = int(data["passes_count"])
-        if passes is not None:
-            set_passes_count(passes)
-        if ROUNDS_TOTAL is not None:
-            # Count the fact that a round completed if data hints at a round-level log
-            if "num_phases" in data or "passes_count" in data or "latency_ms" in data:
-                ROUNDS_TOTAL.inc()
-    except Exception:
-        # Metrics must never break the app
-        pass
 
 
 def log_metrics(data: Dict[str, Any]) -> None:
-    """
-    Logs metrics to a file and updates Prometheus metrics.
+    """Log orchestrator metrics and export to Prometheus if available.
 
     Args:
-        data: The data to log.
+        data: Arbitrary metrics payload from the orchestrator. Recognized keys:
+            - num_phases: int, number of phases executed in a round
+            - tokens_used: int, total tokens used (if available)
     """
     log_entry = {"timestamp": time.time(), "data": data}
-    try:
-        with open("metrics.log", "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry) + "\n")
-    except Exception:
-        # File logging should not break the application flow
-        pass
+    with open("metrics.log", "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry) + "\n")
+    print(f"Logged metrics: {data}")
 
-    _maybe_update_prom_metrics(data)
+    # Best-effort Prometheus updates
+    if ORCHESTRATOR_ROUNDS is not None:
+        ORCHESTRATOR_ROUNDS.inc()
+    if ORCHESTRATOR_PASSES is not None and isinstance(data.get("num_phases"), int):
+        ORCHESTRATOR_PASSES.inc(int(data["num_phases"]))
+    if ORCHESTRATOR_TOKENS is not None and isinstance(data.get("tokens_used"), int):
+        ORCHESTRATOR_TOKENS.inc(int(data["tokens_used"]))
+
+
+def record_round_latency(duration_seconds: float) -> None:
+    """Record the latency of a completed round.
+
+    Args:
+        duration_seconds: Elapsed seconds for the orchestrator round.
+    """
+    if ORCHESTRATOR_ROUND_LATENCY is not None and duration_seconds >= 0:
+        ORCHESTRATOR_ROUND_LATENCY.observe(duration_seconds)
 
 
 def check_adaptive_scheduling(metrics: Dict[str, Any]) -> List[str]:
-    """
-    Checks if adaptive scheduling rules should be applied.
+    """Check if adaptive scheduling rules should be applied.
+
+    This is a stub and can be expanded to read thresholds from configuration.
 
     Args:
-        metrics: The current metrics.
+        metrics: The current metrics snapshot.
 
     Returns:
-        A list of actions to take.
+        List of actions to take.
     """
-    # This is a stub implementation.
-    # In a real implementation, you would check the metrics against
-    # the rules in the meta_prompt.
     actions: List[str] = []
     if metrics.get("slow_response_ms", 0) > 1500:
         actions.append("extend_phase: Brainstorm")

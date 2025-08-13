@@ -15,14 +15,14 @@ try:
     from .rag_utils import RAGUtils
     from .config import settings
     from .orchestrator.agent import OrchestratorAgent
-    from .routers import system as system_router
-    from .version import __version__
+    from .routers.system import router as system_router
+    from . import __version__
 except ImportError:
     from rag_utils import RAGUtils
     from config import settings
     from orchestrator.agent import OrchestratorAgent
-    from routers import system as system_router
-    from version import __version__
+    from routers.system import router as system_router
+    from backend import __version__  # type: ignore
 
 app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
 
@@ -134,8 +134,8 @@ def read_root():
         }
     }
 
-# Register system router (health, metrics)
-app.include_router(system_router.router)
+# System router (health, metrics)
+app.include_router(system_router, prefix="")
 
 if __name__ == "__main__":
     import uvicorn

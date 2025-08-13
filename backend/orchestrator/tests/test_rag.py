@@ -5,31 +5,45 @@ Verifies file upload, retrieval, and end-to-end RAG flow.
 """
 
 import unittest
+import re
 import os
 import sys
 import time
 import subprocess
 import requests
+import pytest
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from backend.orchestrator.agent import OrchestratorAgent
 from backend.rag_utils import RAGUtils
+from backend.orchestrator.rag.inmemory_client import InMemoryRAGClient
 
+
+def test_fast_inmemory_rag_context():
+    """Fast unit test using the in-memory RAG client (no FAISS/model init)."""
+    corpus = [
+        "Test Document: This is a test document about software development.",
+        "Another note unrelated to the topic.",
+    ]
+    agent = OrchestratorAgent(rag_client=InMemoryRAGClient(corpus))
+    context = agent.get_rag_context("software development")
+
+    assert "[RAG Context]" in context
+    assert any(tok in context for tok in ["Test Document", "software development"])
+    assert re.search(r"\[RAG Context\][\s\S]+", context)
+
+@pytest.mark.slow
 class TestRAG(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
         """Set up the test environment."""
         # Start the backend server on a test port
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        backend_dir = os.path.join(project_root, 'backend')
         cls.backend_process = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8001"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            cwd=backend_dir,
-            env={**os.environ, "PYTHONPATH": project_root + os.pathsep + os.environ.get("PYTHONPATH", "")},
+            stderr=subprocess.DEVNULL
         )
         time.sleep(5) # Give the server time to start
 
@@ -93,7 +107,8 @@ class TestRAG(unittest.TestCase):
         # It doesn't assert the final output, but ensures the flow works.
         context = agent.get_rag_context("software development")
         self.assertIn("[RAG Context]", context)
-        self.assertIn("...", context)
+        self.assertTrue(any(tok in context for tok in ["Test Document", "software development"]))
+        self.assertIsNotNone(re.search(r"\[RAG Context\][\s\S]+", context))
 
 if __name__ == "__main__":
     unittest.main()

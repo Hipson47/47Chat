@@ -184,13 +184,36 @@ print(result["transcript"]["final_decision"])
 
 ## 🧪 Testing
 
-The project includes comprehensive automated tests. From the project root, run:
+The project includes automated tests for backend components.
 
-```powershell
-./run_tests.ps1
+### Quick start (cross-platform)
+
+```bash
+python run_tests.py
 ```
 
-This script will enter the `backend` directory and execute `python -m pytest`, ensuring proper test discovery.
+By default, slow tests are skipped. To include slow tests (e.g., ones that start a server and exercise FAISS):
+
+```bash
+SLOW=1 python run_tests.py
+```
+
+Filter tests (example: only RAG):
+
+```bash
+python -m pytest -q -k rag backend
+```
+
+### CI status
+
+- Fast checks (lint + tests) run on pushes and pull requests.
+- Full slow suite runs nightly.
+
+Add a badge to your README once the workflow is live:
+
+```
+![CI](https://github.com/Hipson47/47Chat/actions/workflows/ci.yml/badge.svg)
+```
 
 ### Test Coverage
 

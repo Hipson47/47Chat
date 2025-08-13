@@ -1,22 +1,40 @@
-from fastapi.testclient import TestClient
+import os
+import sys
+import time
+import subprocess
+import requests
 
-from backend.main import app
+
+def start_server() -> subprocess.Popen:
+    return subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8002"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def test_health_and_metrics_endpoints():
-    client = TestClient(app)
+    proc = start_server()
+    try:
+        time.sleep(3)
+        base = "http://127.0.0.1:8002"
+        # Health
+        r = requests.get(f"{base}/health", timeout=10)
+        assert r.status_code == 200
+        data = r.json()
+        assert data.get("status") == "ok"
+        assert isinstance(data.get("version"), str)
 
-    # /health
-    resp = client.get("/health")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body.get("status") == "ok"
-    assert "version" in body
-
-    # /metrics
-    metrics = client.get("/metrics")
-    assert metrics.status_code == 200
-    assert metrics.headers.get("content-type", "").startswith("text/plain")
-    assert isinstance(metrics.content, (bytes, bytearray))
+        # Metrics
+        r2 = requests.get(f"{base}/metrics", timeout=10)
+        assert r2.status_code == 200
+        text = r2.text
+        assert "#" in text or "Prometheus client not installed" in text
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
 
 
