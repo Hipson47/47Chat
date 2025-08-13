@@ -15,10 +15,14 @@ try:
     from .rag_utils import RAGUtils
     from .config import settings
     from .orchestrator.agent import OrchestratorAgent
+    from .routers import system as system_router
+    from .version import __version__
 except ImportError:
     from rag_utils import RAGUtils
     from config import settings
     from orchestrator.agent import OrchestratorAgent
+    from routers import system as system_router
+    from version import __version__
 
 app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
 
@@ -117,7 +121,7 @@ def read_root():
     """
     return {
         "message": "47Chat Orchestrator Service",
-        "version": "1.0.0",
+        "version": __version__,
         "endpoints": {
             "/upload/": "Upload documents for RAG ingestion",
             "/orchestrate/": "Run multi-agent orchestrated discussions"
@@ -130,24 +134,8 @@ def read_root():
         }
     }
 
-@app.get("/health")
-def health_check():
-    """
-    Health check endpoint.
-    """
-    # Check if Ollama is available
-    try:
-        agent = get_orchestrator()
-        # Keep health checks snappy to avoid frontend timeouts.
-        ollama_available = agent.ollama_client.is_available()
-    except Exception:
-        ollama_available = False
-    
-    return {
-        "status": "healthy",
-        "ollama_available": ollama_available,
-        "rag_store_exists": os.path.exists(settings.FAISS_STORE_PATH)
-    }
+# Register system router (health, metrics)
+app.include_router(system_router.router)
 
 if __name__ == "__main__":
     import uvicorn

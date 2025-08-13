@@ -1,40 +1,191 @@
-# .cursorrules - Recommended for 47Chat Project
-# Source: awesome-cursorrules/rules/Python.yml
+# 47Chat Multi-Agent Orchestrator AI - Cursor Rules
+# Advanced AI agent orchestration system with FastAPI backend and Streamlit frontend
 
-project:
-  name: 47Chat
-  version: 1.0.0
-  description: "AI Orchestrator Bot with FastAPI, Streamlit, and local LLMs."
+## Project Context
+You are working on 47Chat, a sophisticated multi-agent AI orchestration platform that coordinates specialized AI agents (alters) through structured discussions and workflows. The system uses FastAPI backend, Streamlit frontend, Ollama for local LLM integration, and FAISS for RAG capabilities.
 
-python:
-  # LINTING: Enforces code style and catches errors.
-  lint:
-    enabled: true
-    tools:
-      - flake8  # Checks for style (PEP8) and logical errors.
-      - mypy    # Static type checker to find type-related bugs.
+## Code Style & Standards
 
-  # FORMATTING: Automatically formats code for consistency.
-  formatting:
-    enabled: true
-    tools:
-      - black   # The uncompromising code formatter.
-      - isort   # Automatically sorts imports.
+### Python (FastAPI Backend)
+- Use Python 3.11+ features and type hints extensively
+- Follow PEP 8 with 88 character line limit (Black formatter)
+- Use Pydantic v2 for data validation and serialization
+- Implement proper async/await patterns for all I/O operations
+- Use dependency injection for database connections and services
+- Add comprehensive docstrings using Google style
+- Implement proper error handling with custom exception classes
 
-  # TESTING: Defines the testing framework and standards.
-  test:
-    enabled: true
-    framework: pytest  # Powerful and standard testing framework for Python.
-    coverage:
-      minimum: 75      # Sets a goal for test coverage at 75%.
+### FastAPI Specific
+- Use APIRouter for modular route organization
+- Implement proper HTTP status codes and response models
+- Add OpenAPI documentation with examples
+- Use Depends() for dependency injection
+- Implement proper CORS configuration
+- Add request/response logging middleware
+- Use background tasks for long-running operations
 
-  # DEPENDENCIES: Manages project dependencies.
-  dependencies:
-    manager: pip
-    file: requirements.txt # Assumes dependencies are in requirements.txt
+### Agent Orchestration Patterns
+- Implement clear separation between orchestrator logic and agent implementations
+- Use factory patterns for agent creation and selection
+- Implement proper state management for multi-turn conversations
+- Add comprehensive logging for agent interactions and decisions
+- Use structured data formats (JSON/Pydantic) for agent communication
+- Implement proper timeout and retry mechanisms for agent calls
 
-# GENERAL RULES
-general:
-  enforce_readme: true
-  enforce_gitignore: true
-  forbid_hardcoded_secrets: true # Prevents accidentally committing API keys.
+### LLM Integration
+- Abstract LLM providers behind consistent interfaces
+- Implement proper token counting and cost tracking
+- Add comprehensive error handling for API failures
+- Use connection pooling for external API calls
+- Implement proper prompt templates and validation
+- Add support for streaming responses where applicable
+
+## Architecture Patterns
+
+### Multi-Agent System Design
+- Keep agents stateless where possible
+- Use event-driven architecture for agent communication
+- Implement proper agent lifecycle management
+- Add comprehensive agent performance metrics
+- Use factory patterns for dynamic agent creation
+- Implement proper agent selection algorithms based on task analysis
+
+### RAG Implementation
+- Use FAISS for vector storage with proper indexing strategies
+- Implement chunking strategies optimized for technical documentation
+- Add proper document preprocessing and cleaning
+- Use embedding models consistent with retrieval requirements
+- Implement proper relevance scoring and ranking
+- Add support for multiple document types and formats
+
+### Security & Error Handling
+- Sanitize all user inputs, especially for agent prompts
+- Implement rate limiting on all API endpoints
+- Add proper authentication and authorization layers
+- Use environment variables for all sensitive configuration
+- Implement comprehensive audit logging
+- Add proper input validation for all agent parameters
+
+## File Organization
+
+### Backend Structure
+backend/
+├── orchestrator/ # Core orchestration logic
+│ ├── agents/ # Agent implementations
+│ ├── workflows/ # Workflow definitions
+│ ├── utils/ # Shared utilities
+│ └── tests/ # Unit and integration tests
+├── api/ # FastAPI routes and models
+├── core/ # Core business logic
+└── config/ # Configuration management
+
+text
+
+### Code Quality Requirements
+- All functions must have type hints and docstrings
+- Minimum 80% test coverage for core orchestration logic
+- Use pytest for testing with proper fixtures
+- Implement property-based testing for agent selection logic
+- Add integration tests for complete agent workflows
+- Use mypy for static type checking
+
+## Specific Implementation Guidelines
+
+### Agent Communication
+Use structured communication protocols
+class AgentMessage(BaseModel):
+agent_id: str
+message_type: MessageType
+content: Dict[str, Any]
+timestamp: datetime
+conversation_id: str
+
+text
+
+### Orchestration Logic
+Implement clear orchestration patterns
+class AgentOrchestrator:
+async def coordinate_agents(
+self,
+query: str,
+selected_agents: List[str],
+workflow_type: WorkflowType
+) -> OrchestrationResult:
+# Clear separation of concerns
+pass
+
+text
+
+### Error Handling
+Comprehensive error handling for agent operations
+class AgentExecutionError(Exception):
+def init(self, agent_id: str, error_details: str):
+self.agent_id = agent_id
+self.error_details = error_details
+super().init(f"Agent {agent_id} failed: {error_details}")
+
+text
+
+## Performance & Optimization
+
+### Async Operations
+- Use asyncio for all I/O bound operations
+- Implement proper connection pooling for external APIs
+- Use async context managers for resource management
+- Implement proper backpressure handling for agent queues
+
+### Caching Strategy
+- Cache agent responses where appropriate
+- Implement proper cache invalidation strategies
+- Use Redis for distributed caching if scaling beyond single instance
+- Cache embedding computations for RAG operations
+
+### Monitoring & Observability
+- Add comprehensive metrics for agent performance
+- Implement proper logging with structured formats
+- Track token usage and costs across all LLM providers
+- Monitor agent selection accuracy and user satisfaction
+
+## Dependencies & Libraries
+
+### Core Dependencies
+- fastapi[all] >= 0.104.0
+- streamlit >= 1.28.0
+- ollama >= 0.1.0
+- faiss-cpu >= 1.7.4
+- pydantic >= 2.5.0
+- asyncio-mqtt for agent communication
+- prometheus-client for metrics
+
+### Development Dependencies
+- pytest >= 7.4.0
+- pytest-asyncio >= 0.21.0
+- black >= 23.0.0
+- mypy >= 1.7.0
+- ruff >= 0.1.0
+
+## Security Considerations
+
+### Input Validation
+- Validate all agent parameters and prompts
+- Implement proper schema validation for API requests
+- Sanitize user inputs to prevent prompt injection
+- Add rate limiting per user/session
+
+### API Security
+- Use proper HTTPS in production
+- Implement API key management for external services
+- Add CORS configuration appropriate for deployment
+- Use secure session management for multi-turn conversations
+
+## Documentation Requirements
+- All agent implementations must include usage examples
+- API endpoints must have comprehensive OpenAPI documentation
+- Include architecture diagrams for complex orchestration flows
+- Maintain up-to-date README with setup and deployment instructions
+
+## Testing Strategy
+- Unit tests for all agent selection logic
+- Integration tests for complete orchestration workflows
+- Performance tests for agent coordination under load
+- Security tests for input validation and sanitization

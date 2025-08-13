@@ -22,10 +22,14 @@ class TestRAG(unittest.TestCase):
     def setUpClass(cls):
         """Set up the test environment."""
         # Start the backend server on a test port
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        backend_dir = os.path.join(project_root, 'backend')
         cls.backend_process = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8001"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
+            cwd=backend_dir,
+            env={**os.environ, "PYTHONPATH": project_root + os.pathsep + os.environ.get("PYTHONPATH", "")},
         )
         time.sleep(5) # Give the server time to start
 

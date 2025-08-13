@@ -16,3 +16,4 @@ langgraph
 pytest
 slowapi
 openai
+prometheus-client

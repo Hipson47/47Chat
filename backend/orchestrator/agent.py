@@ -322,9 +322,13 @@ class OrchestratorAgent:
         graph.add_edge("selfverify", "vote")
         graph.add_edge("vote", END)
 
-        # Execute graph
+        # Execute graph and track latency
+        import time as _time
+        start_ts = _time.time()
         app = graph.compile()
         final_state = app.invoke(initial_state)
+        end_ts = _time.time()
+        round_latency_ms = int((end_ts - start_ts) * 1000)
 
         # Ensure the returned transcript is JSON-serializable.
         # The internal state contains Python objects (e.g., `Alter`) that
@@ -337,15 +341,15 @@ class OrchestratorAgent:
         }
 
         # Log metrics
-        log_metrics(
-            {
-                "user_prompt": user_prompt,
-                "assigned_teams": initial_state["assigned_teams"],
-                "use_rag": use_rag,
-                "num_alters": len(participating_alters),
-                "num_phases": len(serializable_state.get("phases", [])),
-            }
-        )
+        log_payload = {
+            "user_prompt": user_prompt,
+            "assigned_teams": initial_state["assigned_teams"],
+            "use_rag": use_rag,
+            "num_alters": len(participating_alters),
+            "num_phases": len(serializable_state.get("phases", [])),
+            "latency_ms": round_latency_ms,
+        }
+        log_metrics(log_payload)
 
         print("\nRound completed.")
         return serializable_state  # type: ignore[return-value]
