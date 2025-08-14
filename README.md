@@ -73,7 +73,12 @@ The application follows a unified architecture where all components are integrat
 
 2. **Install dependencies:**
    ```bash
-   pip install -r backend/requirements.txt
+   # Default (modern): Uses NumPy 2.x + FAISS 1.8+ (recommended)
+   pip install -r backend/requirements.txt -c constraints.txt
+   
+   # Legacy: For older environments requiring NumPy 1.x + FAISS 1.7.4
+   # Uncomment legacy options in constraints.txt, then:
+   # pip install -r backend/requirements.txt -c constraints.txt
    ```
 
 3. **Set up Ollama:**
@@ -204,9 +209,18 @@ Filter tests (example: only RAG):
 python -m pytest -q -k rag backend
 ```
 
+### Dependency Management
+
+The project uses constraints files to manage FAISS/NumPy compatibility:
+
+- **Modern (default)**: NumPy 2.x + FAISS 1.8+ - eliminates deprecation warnings
+- **Legacy**: NumPy 1.x + FAISS 1.7.4 - for older environments
+
+To switch to legacy mode, edit `constraints.txt` and uncomment the legacy options.
+
 ### CI status
 
-- Fast checks (lint + tests) run on pushes and pull requests.
+- Fast checks (lint + tests) run on pushes and pull requests with both modern and legacy dependency combinations.
 - Full slow suite runs nightly.
 
 Add a badge to your README once the workflow is live:

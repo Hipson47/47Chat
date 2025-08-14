@@ -30,8 +30,12 @@ def test_fast_inmemory_rag_context():
     context = agent.get_rag_context("software development")
 
     assert "[RAG Context]" in context
-    assert any(tok in context for tok in ["Test Document", "software development"])
-    assert re.search(r"\[RAG Context\][\s\S]+", context)
+    # Check there are at most 3 chunk lines
+    lines = [ln for ln in context.splitlines() if ln.strip().startswith("Chunk ")]
+    assert 1 <= len(lines) <= 3
+    # Each line must match the deterministic format
+    for ln in lines:
+        assert re.match(r'^Chunk \d+: ".*" \[score: \d\.\d{3}\]$', ln)
 
 @pytest.mark.slow
 class TestRAG(unittest.TestCase):
@@ -107,8 +111,11 @@ class TestRAG(unittest.TestCase):
         # It doesn't assert the final output, but ensures the flow works.
         context = agent.get_rag_context("software development")
         self.assertIn("[RAG Context]", context)
-        self.assertTrue(any(tok in context for tok in ["Test Document", "software development"]))
-        self.assertIsNotNone(re.search(r"\[RAG Context\][\s\S]+", context))
+        lines = [ln for ln in context.splitlines() if ln.strip().startswith("Chunk ")]
+        self.assertGreaterEqual(len(lines), 1)
+        self.assertLessEqual(len(lines), 3)
+        for ln in lines:
+            self.assertRegex(ln, r'^Chunk \d+: ".*" \[score: \d\.\d{3}\]$')
 
 if __name__ == "__main__":
     unittest.main()

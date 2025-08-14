@@ -1,0 +1,24 @@
+# Dependency constraints for 47Chat
+#
+# This file defines compatible version combinations to avoid deprecation warnings
+# and ensure stable operation across different environments.
+#
+# Usage:
+#   pip install -r requirements.txt -c constraints.txt
+#
+# Two supported combinations:
+
+# Option A (default/modern): Compatible with NumPy 2.x
+# Requires FAISS 1.8.0+ which handles NumPy 2.x API changes
+faiss-cpu>=1.8.0
+numpy>=2.0.0,<3.0.0
+
+# Option B (legacy): For older environments or compatibility requirements
+# Uncomment the lines below and comment out Option A to use legacy versions
+# faiss-cpu==1.7.4
+# numpy>=1.21.0,<2.0.0
+
+# Development and testing dependencies
+pytest>=7.4.0
+ruff>=0.1.0
+prometheus-client>=0.17.0

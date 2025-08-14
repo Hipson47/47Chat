@@ -16,6 +16,7 @@ from .clients.tool_clients import ToolClient
 from .utils.loader import load_meta_prompt
 from .utils.team_assigner import auto_assign_teams
 from .utils.metrics import log_metrics, record_round_latency
+from .utils.rag_formatter import RAGContextFormatter
 # Support both package import (backend.orchestrator.agent) and top-level (orchestrator.agent)
 try:
     from ..rag_utils import RAGUtils
@@ -192,20 +193,28 @@ class OrchestratorAgent:
         return [self.alters[alter_id] for alter_id in alter_ids if alter_id in self.alters]
 
     def get_rag_context(self, query: str, k: int = 3) -> str:
-        """
-        Retrieves context from the RAG store.
-        """
+        """Retrieve and deterministically format context from the RAG store."""
         try:
-            # Abstract over the rag client to facilitate fast test doubles
-            results = self.rag_client.retrieve(query, k)  # type: ignore[attr-defined]
+            # Always limit to top-3 for deterministic formatting
+            results = self.rag_client.retrieve(query, 3)  # type: ignore[attr-defined]
             if not results:
                 return ""
 
+            # Debug: pre-format snapshot
+            try:
+                print(f"[RAG get_rag_context] raw_results={results}")
+            except Exception:
+                pass
+
             context = "[RAG Context]\n"
-            for i, res in enumerate(results):
-                # Truncate long chunks for readability
-                chunk_text = res['chunk'][:200] + "..." if len(res['chunk']) > 200 else res['chunk']
-                context += f"- Chunk {i+1}: \"{chunk_text}\" [score: {res['score']:.3f}]\n"
+            formatted = RAGContextFormatter.format_chunks(results[:3])
+            context += formatted
+
+            # Debug: post-format snapshot
+            try:
+                print(f"[RAG get_rag_context] formatted=\n{context}")
+            except Exception:
+                pass
             return context
         except Exception as e:
             print(f"Error retrieving RAG context: {e}")

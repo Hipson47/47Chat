@@ -1,19 +1,36 @@
+# Core application dependencies
+# Use with constraints: pip install -r requirements.txt -c ../constraints.txt
+-c ../constraints.txt
+
+# Web framework and server
 fastapi
 uvicorn
 python-multipart
+
+# AI/ML and vector search
 faiss-cpu
 sentence-transformers
+
+# Document processing
 pypdf
 markdown
 beautifulsoup4
 lxml
+
+# HTTP and data handling
 requests
 pydantic
 pydantic-settings
 pyyaml
+
+# UI and orchestration
 streamlit
 langgraph
-pytest
+
+# API integrations
 slowapi
 openai
+
+# Development and testing (also in constraints.txt)
+pytest
 prometheus-client
