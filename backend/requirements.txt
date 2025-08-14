@@ -33,4 +33,5 @@ openai
 
 # Development and testing (also in constraints.txt)
 pytest
+pytest-asyncio
 prometheus-client
