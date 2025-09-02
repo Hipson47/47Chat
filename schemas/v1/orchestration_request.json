@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/orchestration_request.json",
+  "title": "OrchestrationRequest",
+  "description": "Schema for orchestration request payload",
+  "type": "object",
+  "properties": {
+    "question": {
+      "type": "string",
+      "description": "The question to orchestrate",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "^(?!\\s*$).+",  // Not just whitespace
+      "examples": ["How can I improve my application architecture?"]
+    },
+    "use_rag": {
+      "type": "boolean",
+      "description": "Whether to use RAG context for the orchestration",
+      "default": true,
+      "examples": [true, false]
+    }
+  },
+  "required": ["question"],
+  "additionalProperties": false
+}

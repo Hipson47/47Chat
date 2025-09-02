@@ -30,7 +30,7 @@ jobs:
         run: python -m mypy . --strict
 
       - name: Unit tests
-        run: python -m pytest -q --maxfail=1 --disable-warnings
+        run: python -m pytest
 
       - name: Dependency security scan (safety)
         run: python -m safety check || true

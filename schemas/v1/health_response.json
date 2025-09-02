@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/health_response.json",
+  "title": "HealthResponse",
+  "description": "Schema for health check response",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["healthy", "unhealthy", "degraded"],
+      "description": "Overall health status of the service",
+      "examples": ["healthy"]
+    },
+    "ollama_available": {
+      "type": "boolean",
+      "description": "Whether Ollama service is available and responding",
+      "examples": [true, false]
+    },
+    "rag_store_exists": {
+      "type": "boolean",
+      "description": "Whether the RAG vector store exists and is accessible",
+      "examples": [true, false]
+    }
+  },
+  "required": ["status", "ollama_available", "rag_store_exists"],
+  "additionalProperties": false
+}

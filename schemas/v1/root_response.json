@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/root_response.json",
+  "title": "RootResponse",
+  "description": "Schema for root endpoint response",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Welcome message for the service",
+      "pattern": "^47Chat.*",
+      "examples": ["47Chat Orchestrator Service"]
+    },
+    "version": {
+      "type": "string",
+      "description": "API version following semantic versioning",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0", "2.1.3"]
+    },
+    "endpoints": {
+      "type": "object",
+      "description": "Available API endpoints and their descriptions",
+      "properties": {
+        "/upload/": {
+          "type": "string",
+          "description": "Description of the upload endpoint",
+          "examples": ["Upload documents for RAG ingestion"]
+        },
+        "/orchestrate/": {
+          "type": "string",
+          "description": "Description of the orchestrate endpoint",
+          "examples": ["Run multi-agent orchestrated discussions"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "config": {
+      "type": "object",
+      "description": "Current configuration settings (non-sensitive)",
+      "properties": {
+        "OLLAMA_MODEL": {
+          "type": "string",
+          "description": "Default Ollama model name",
+          "examples": ["llama3", "mistral"]
+        },
+        "META_PROMPT_PATH": {
+          "type": "string",
+          "description": "Path to meta prompt configuration",
+          "pattern": ".*\\.yaml$",
+          "examples": ["backend/orchestrator/meta_prompt.yaml"]
+        },
+        "FAISS_STORE_PATH": {
+          "type": "string",
+          "description": "Path to FAISS vector store",
+          "pattern": ".*\\.faiss$",
+          "examples": ["rag_store.faiss"]
+        },
+        "CHUNKS_PATH": {
+          "type": "string",
+          "description": "Path to chunks JSON file",
+          "pattern": ".*\\.json$",
+          "examples": ["rag_chunks.json"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["message", "version", "endpoints", "config"],
+  "additionalProperties": false
+}

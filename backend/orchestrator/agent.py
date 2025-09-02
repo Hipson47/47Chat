@@ -23,8 +23,8 @@ try:
 except (
     ImportError
 ):  # When 'backend' isn't the parent package and we're running from backend/ dir
-    from config import settings
-    from rag_utils import RAGUtils
+    from backend.config import settings
+    from backend.rag_utils import RAGUtils
 from typing import TypedDict
 
 from langgraph.graph import END, StateGraph

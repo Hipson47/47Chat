@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/orchestration_response.json",
+  "title": "OrchestrationResponse",
+  "description": "Schema for orchestration response payload",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success"],
+      "description": "Status of the orchestration operation",
+      "examples": ["success"]
+    },
+    "transcript": {
+      "type": "object",
+      "description": "Complete transcript of the orchestrated discussion",
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The original question that was orchestrated",
+          "minLength": 1,
+          "maxLength": 2000,
+          "examples": ["How can I improve my application architecture?"]
+        },
+        "teams_assigned": {
+          "type": "array",
+          "description": "List of teams assigned to handle the question",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "examples": ["backend_team", "security_team"]
+          },
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "phases": {
+          "type": "array",
+          "description": "Discussion phases and their results",
+          "items": {
+            "type": "object",
+            "properties": {
+              "phase": {
+                "type": "string",
+                "enum": ["Brainstorm", "CriticalReview", "SelfVerify", "Vote"],
+                "description": "Name of the discussion phase",
+                "examples": ["Brainstorm", "Vote"]
+              },
+              "contributions": {
+                "type": "array",
+                "description": "Agent contributions for this phase",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "agent": {
+                      "type": "string",
+                      "description": "Name of the contributing agent",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "examples": ["backend_expert", "security_specialist"]
+                    },
+                    "team": {
+                      "type": "string",
+                      "description": "Team the agent belongs to",
+                      "minLength": 1,
+                      "maxLength": 50,
+                      "examples": ["backend_team", "security_team"]
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Agent's contribution content",
+                      "minLength": 1,
+                      "examples": ["I think we should consider using microservices architecture..."]
+                    }
+                  },
+                  "required": ["agent", "team", "content"],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              }
+            },
+            "required": ["phase", "contributions"],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "final_decision": {
+          "type": "string",
+          "description": "Final synthesized decision from all phases",
+          "minLength": 1,
+          "examples": ["Based on the comprehensive analysis..."]
+        }
+      },
+      "required": ["question", "teams_assigned", "phases", "final_decision"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["status", "transcript"],
+  "additionalProperties": false
+}

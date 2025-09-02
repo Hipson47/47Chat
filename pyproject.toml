@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "wheel", "build"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "47chat"
-version = "0.1.0"
+dynamic = ["version"]
 description = "AI Multi-Agent Orchestrator with RAG capabilities"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -75,8 +75,17 @@ dev = [
     "mypy>=1.11,<2",
     "pytest>=8.3,<9",
     "pytest-cov>=5,<6",
+    "pytest-xdist>=3.5,<4",
+    "pytest-benchmark>=4.0,<5",
+    "hypothesis>=6.100,<7",
     "safety>=3,<4",
-    "pre-commit>=3.5,<4"
+    "pre-commit>=3.5,<4",
+    "structlog>=23.1,<24",
+    "opentelemetry-sdk>=1.20,<2",
+    "opentelemetry-instrumentation-fastapi>=0.41b0,<1",
+    "opentelemetry-exporter-otlp>=1.20,<2",
+    "prometheus-client>=0.19,<1",
+    "python-semantic-release>=9.0,<10"
 ]
 gpu = [
     "torch>=2.0.0",
@@ -88,8 +97,15 @@ docs = [
     "sphinx-rtd-theme>=1.3,<2.0",
     "myst-parser>=2.0,<3.0"
 ]
+observability = [
+    "structlog>=23.1,<24",
+    "opentelemetry-sdk>=1.20,<2",
+    "opentelemetry-instrumentation-fastapi>=0.41b0,<1",
+    "opentelemetry-exporter-otlp>=1.20,<2",
+    "prometheus-client>=0.19,<1"
+]
 all = [
-    "47chat[dev,gpu,docs]"
+    "47chat[dev,gpu,docs,observability]"
 ]
 
 [tool.ruff]
@@ -124,8 +140,88 @@ exclude = ["build/"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-q --maxfail=1 --disable-warnings"
+addopts = [
+    "-q",
+    "-ra",
+    "-n", "auto",
+    "--cov=backend",
+    "--cov=frontend",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=85",
+    "--disable-warnings",
+    "--strict-markers",
+    "--strict-config"
+]
 testpaths = ["tests", "backend/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "property: marks tests as property-based tests",
+    "smoke: marks tests as smoke tests"
+]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = [
+    "backend/__init__.py:__version__",
+    "frontend/__init__.py:__version__"
+]
+branch = "main"
+changelog_file = "CHANGELOG.md"
+build_command = "python -m pip install build && python -m build"
+dist_glob_patterns = ["dist/*"]
+upload_to_pypi = false
+upload_to_release = true
+github_release = true
+github_release_name_template = "Release {version} 🚀"
+github_release_notes_template = """
+## 🚀 Release {version}
+
+{notes}
+
+### 📦 Installation
+```bash
+pip install 47chat=={version}
+```
+
+### 🔗 Links
+- [Compare Changes](https://github.com/Hipson47/47Chat/compare/{previous_version}...{version})
+- [Full Changelog](https://github.com/Hipson47/47Chat/blob/main/CHANGELOG.md)
+"""
+commit_message = "chore(release): bump version to {version} [skip ci]"
+commit_author = "semantic-release <semantic-release@47chat.dev>"
+
+[tool.semantic_release.changelog]
+template_dir = "templates"
+changelog_file = "CHANGELOG.md"
+exclude_commit_patterns = [
+    "chore.*",
+    "ci.*",
+    "build.*",
+    "test.*",
+    "docs.*",
+    "style.*",
+    "refactor.*",
+    "perf.*"
+]
+
+[tool.semantic_release.commit_parser_options]
+major_types = ["breaking"]
+minor_types = ["feat"]
+patch_types = ["fix", "perf"]
+other_types = ["docs", "style", "refactor", "test", "build", "ci", "chore"]
+allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "style", "refactor", "test", "breaking"]
+parse_squash_commits = true
+ignore_merge_commits = true
+
+[tool.semantic_release.remote]
+name = "origin"
+type = "github"
+ignore_token_for_push = false
+insecure_skip_verify = false

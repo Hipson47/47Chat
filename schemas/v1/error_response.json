@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/error_response.json",
+  "title": "ErrorResponse",
+  "description": "Schema for API error responses",
+  "type": "object",
+  "properties": {
+    "detail": {
+      "type": "string",
+      "description": "Human-readable error message",
+      "minLength": 1,
+      "maxLength": 500,
+      "examples": ["Question cannot be empty.", "Maximum 10 files allowed per upload."]
+    }
+  },
+  "required": ["detail"],
+  "additionalProperties": false
+}

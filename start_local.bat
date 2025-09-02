@@ -11,6 +11,9 @@ set "BACKEND_PORT=8000"
 REM Move to script directory
 cd /d "%~dp0"
 
+REM Set PYTHONPATH for proper package imports
+set "PYTHONPATH=%CD%"
+
 REM Locate PowerShell (Windows PowerShell or PowerShell 7)
 set "PWSH_CMD=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 if not exist "%PWSH_CMD%" (

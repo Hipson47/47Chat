@@ -250,6 +250,309 @@ This project is designed for easy extension and customization. Key areas for con
 
 ---
 
+## 📊 Observability & Monitoring
+
+47Chat includes comprehensive observability features for production monitoring and debugging.
+
+### Structured Logging
+
+All logs are formatted as JSON with consistent structure:
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:45.123456Z",
+  "level": "INFO",
+  "logger": "backend.main",
+  "message": "Orchestration completed successfully",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "question_length": 42,
+  "teams_count": 3,
+  "phases_count": 4,
+  "duration": 2.34,
+  "use_rag": true
+}
+```
+
+#### Key Features:
+- **Request ID tracking** across all log entries
+- **Trace ID correlation** for distributed tracing
+- **Structured data** for easy parsing and analysis
+- **Performance metrics** included in logs
+- **Error context** with stack traces
+
+### Distributed Tracing
+
+OpenTelemetry tracing provides end-to-end visibility:
+
+#### Automatic Instrumentation:
+- FastAPI request/response tracing
+- HTTP client call tracing
+- Database operation tracing
+- AI model inference tracing
+
+#### Custom Spans:
+- Orchestration phases
+- RAG retrieval operations
+- Agent contributions
+- Error handling flows
+
+### Metrics & Monitoring
+
+Prometheus-compatible metrics for alerting and dashboards:
+
+#### HTTP Metrics:
+```prometheus
+# Request count by method and endpoint
+http_requests_total{method="POST", endpoint="/orchestrate/", status_code="200"} 42
+
+# Request duration percentiles
+http_request_duration_seconds{method="POST", endpoint="/orchestrate/", quantile="0.95"} 3.2
+```
+
+#### Business Metrics:
+```prometheus
+# Orchestration success/failure rates
+orchestration_requests_total{status="success", teams_count="3"} 38
+
+# AI model inference times
+ai_model_inference_duration_seconds{model_name="llama3", provider="ollama", quantile="0.95"} 1.8
+```
+
+#### Health Metrics:
+```prometheus
+# Service health status
+health_status 1
+
+# Component availability
+ollama_available 1
+rag_store_exists 1
+```
+
+### Local Development Setup
+
+#### 1. Install Observability Dependencies:
+```bash
+# Install with observability features
+uv pip install -e .[observability]
+
+# Or install individual packages
+uv pip install structlog opentelemetry-sdk opentelemetry-instrumentation-fastapi opentelemetry-exporter-otlp prometheus-client
+```
+
+#### 2. Run with Local Tracing:
+```bash
+# Set environment variable for local development
+export OTLP_ENDPOINT="http://localhost:4317"
+
+# Or run without OTLP (uses console exporter)
+unset OTLP_ENDPOINT
+
+# Start the application
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### 3. View Logs:
+```bash
+# Logs appear in JSON format
+tail -f /dev/stdout | jq .
+```
+
+#### 4. Access Metrics:
+```bash
+# Prometheus metrics endpoint
+curl http://localhost:8000/metrics
+
+# Health check with metrics
+curl http://localhost:8000/health
+```
+
+### Production Setup
+
+#### OpenTelemetry Collector:
+```yaml
+# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  jaeger:
+    endpoint: jaeger:14268
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [jaeger]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
+```
+
+#### Docker Compose with Observability:
+```yaml
+# Add to docker-compose.yml
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    ports:
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+      - "8889:8889"    # Prometheus metrics
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # Jaeger UI
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+```
+
+#### Environment Variables:
+```bash
+# Production configuration
+export OTLP_ENDPOINT="http://otel-collector:4317"
+export LOG_LEVEL="INFO"
+export SERVICE_NAME="47chat"
+export SERVICE_VERSION="1.0.0"
+```
+
+### Monitoring Dashboards
+
+#### Grafana Dashboard Example:
+```json
+{
+  "dashboard": {
+    "title": "47Chat Observability",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ]
+      },
+      {
+        "title": "Orchestration Duration",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(orchestration_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status_code=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100",
+            "legendFormat": "5xx Error Rate %"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Alerting Rules
+
+#### Prometheus Alerting Rules:
+```yaml
+groups:
+  - name: 47chat
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status_code=~"[45].."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | printf \"%.2f\" }}%"
+
+      - alert: OrchestrationSlow
+        expr: histogram_quantile(0.95, rate(orchestration_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Orchestration requests are slow"
+          description: "95th percentile orchestration duration is {{ $value | printf \"%.2f\" }}s"
+
+      - alert: OllamaUnavailable
+        expr: ollama_available == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ollama service is unavailable"
+          description: "Ollama service has been unavailable for 2 minutes"
+```
+
+### Troubleshooting
+
+#### Common Issues:
+
+**Logs not appearing in JSON format:**
+```bash
+# Check if structlog is installed
+python -c "import structlog; print('structlog available')"
+
+# Verify logging configuration
+python -c "from backend.observability.logging import setup_logging; setup_logging()"
+```
+
+**Traces not being exported:**
+```bash
+# Check OTLP endpoint connectivity
+curl -v http://localhost:4317/v1/traces
+
+# Verify environment variables
+echo $OTLP_ENDPOINT
+```
+
+**Metrics not updating:**
+```bash
+# Check metrics endpoint
+curl http://localhost:8000/metrics
+
+# Verify prometheus_client is installed
+python -c "import prometheus_client; print('prometheus_client available')"
+```
+
+#### Log Analysis:
+```bash
+# Filter logs by request ID
+cat logs/app.log | jq 'select(.request_id == "550e8400-e29b-41d4-a716-446655440000")'
+
+# Find slow requests
+cat logs/app.log | jq 'select(.duration > 5)'
+
+# Count errors by type
+cat logs/app.log | jq -r 'select(.level == "ERROR") | .error_type' | sort | uniq -c
+```
+
+---
+
 **Powered by 47Chat Multi-Agent Orchestrator** | Local LLMs + RAG + Multi-Agent Intelligence
 
 ---

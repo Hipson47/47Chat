@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/upload_response.json",
+  "title": "UploadResponse",
+  "description": "Schema for file upload response",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Success message indicating upload completion",
+      "pattern": "^Successfully uploaded and ingested \\d+ files?\\.$",
+      "examples": ["Successfully uploaded and ingested 3 files."]
+    },
+    "files": {
+      "type": "array",
+      "description": "List of successfully uploaded and ingested files",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Original filename of the uploaded file",
+            "minLength": 1,
+            "maxLength": 255,
+            "examples": ["document.pdf", "readme.md"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success"],
+            "description": "Ingestion status for this file",
+            "examples": ["success"]
+          },
+          "chunks_created": {
+            "type": "integer",
+            "description": "Number of text chunks created from this file",
+            "minimum": 0,
+            "examples": [15, 42]
+          }
+        },
+        "required": ["filename", "status", "chunks_created"],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 10
+    }
+  },
+  "required": ["message", "files"],
+  "additionalProperties": false
+}

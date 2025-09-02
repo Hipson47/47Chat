@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://47chat.com/schemas/v1/index.json",
+  "title": "47Chat API Schemas Index",
+  "description": "Index of all JSON schemas for 47Chat API v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["v1"],
+      "description": "Schema version"
+    },
+    "schemas": {
+      "type": "object",
+      "description": "Mapping of schema names to their JSON Schema files",
+      "properties": {
+        "orchestration_request": {
+          "type": "string",
+          "description": "Schema for orchestration request payload",
+          "enum": ["orchestration_request.json"]
+        },
+        "orchestration_response": {
+          "type": "string",
+          "description": "Schema for orchestration response payload",
+          "enum": ["orchestration_response.json"]
+        },
+        "health_response": {
+          "type": "string",
+          "description": "Schema for health check response",
+          "enum": ["health_response.json"]
+        },
+        "root_response": {
+          "type": "string",
+          "description": "Schema for root endpoint response",
+          "enum": ["root_response.json"]
+        },
+        "upload_response": {
+          "type": "string",
+          "description": "Schema for file upload response",
+          "enum": ["upload_response.json"]
+        },
+        "error_response": {
+          "type": "string",
+          "description": "Schema for API error responses",
+          "enum": ["error_response.json"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "endpoints": {
+      "type": "object",
+      "description": "Mapping of API endpoints to their request/response schemas",
+      "properties": {
+        "POST /orchestrate/": {
+          "type": "object",
+          "properties": {
+            "request": { "type": "string", "enum": ["orchestration_request"] },
+            "response": { "type": "string", "enum": ["orchestration_response"] },
+            "error": { "type": "string", "enum": ["error_response"] }
+          },
+          "additionalProperties": false
+        },
+        "POST /upload/": {
+          "type": "object",
+          "properties": {
+            "response": { "type": "string", "enum": ["upload_response"] },
+            "error": { "type": "string", "enum": ["error_response"] }
+          },
+          "additionalProperties": false
+        },
+        "GET /health": {
+          "type": "object",
+          "properties": {
+            "response": { "type": "string", "enum": ["health_response"] },
+            "error": { "type": "string", "enum": ["error_response"] }
+          },
+          "additionalProperties": false
+        },
+        "GET /": {
+          "type": "object",
+          "properties": {
+            "response": { "type": "string", "enum": ["root_response"] },
+            "error": { "type": "string", "enum": ["error_response"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["version", "schemas", "endpoints"],
+  "additionalProperties": false
+}
