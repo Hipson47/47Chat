@@ -319,20 +319,20 @@ class OrchestratorAgent:
         initial_state["participating_alters"] = participating_alters
 
         # Define graph nodes (phase handlers)
-        def brainstorm_node(state: OrchestratorAgent.OrchestrationState):
+        def brainstorm_node(state: OrchestratorAgent.OrchestrationState) -> OrchestratorAgent.OrchestrationState:
             return self._run_phase(state, "Brainstorm")
 
-        def review_node(state: OrchestratorAgent.OrchestrationState):
+        def review_node(state: OrchestratorAgent.OrchestrationState) -> OrchestratorAgent.OrchestrationState:
             return self._run_phase(state, "CriticalReview")
 
-        def selfverify_node(state: OrchestratorAgent.OrchestrationState):
+        def selfverify_node(state: OrchestratorAgent.OrchestrationState) -> OrchestratorAgent.OrchestrationState:
             return self._run_phase(state, "SelfVerify")
 
-        def vote_node(state: OrchestratorAgent.OrchestrationState):
+        def vote_node(state: OrchestratorAgent.OrchestrationState) -> OrchestratorAgent.OrchestrationState:
             state = self._run_phase(state, "Vote")
             # Generate final decision using OpenAI moderator
             try:
-                decision_prompt = self._build_decision_prompt(state)  # type: ignore[arg-type]
+                decision_prompt = self._build_decision_prompt(state)
                 state["final_decision"] = self.moderator_client.invoke(decision_prompt)
             except Exception as e:
                 state["final_decision"] = f"Error generating final decision: {e!s}"

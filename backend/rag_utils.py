@@ -12,12 +12,11 @@ This ensures the store is automatically reloaded after application restarts.
 
 import json
 import os
-from typing import Any
 
+from bs4 import BeautifulSoup
 import faiss
 import markdown
 import numpy as np
-from bs4 import BeautifulSoup
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 

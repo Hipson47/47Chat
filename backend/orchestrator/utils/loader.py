@@ -4,11 +4,12 @@ Utility for loading and preprocessing YAML files and other file types.
 """
 
 import os
+from typing import Any
 
 import yaml
 
 
-def load_meta_prompt(file_path):
+def load_meta_prompt(file_path: str) -> dict[str, Any]:
     """
     Loads the meta_prompt.yaml file.
 
@@ -53,7 +54,7 @@ def load_meta_prompt(file_path):
     )
 
 
-def preprocess_file(file_path):
+def preprocess_file(file_path: str) -> str:
     """
     Preprocesses a file by reading its content.
 

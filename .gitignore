@@ -138,3 +138,70 @@ dmypy.json
 rag_store.faiss
 rag_chunks.json
 /uploads/*
+
+# 🔒 Security - Secrets and Credentials
+# Environment files
+.env*
+!.env.example
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# Secret files
+secrets.*
+*.secret
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# API Keys and Tokens
+*_API_KEY*
+*_SECRET*
+*_TOKEN*
+*API_KEY*
+*SECRET*
+*TOKEN*
+
+# AWS Credentials
+.aws/
+credentials
+config
+*.aws
+
+# Google Cloud
+gcp-*.json
+*.gcp
+google-credentials.json
+
+# Azure
+.azure/
+*.azure
+
+# Database credentials
+*.db
+*.sqlite
+*.sqlite3
+
+# SSH keys (should never be committed)
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+id_ecdsa
+id_ecdsa.pub
+id_ed25519
+id_ed25519.pub
+ssh_config
+
+# GPG keys
+*.gpg
+*.pgp
+
+# Docker secrets
+docker/secrets/
+*.secret

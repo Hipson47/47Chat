@@ -43,7 +43,7 @@ class OrchestrationRequest(BaseModel):
     use_rag: bool = Field(default=True, description="Whether to use RAG context")
 
 
-def get_orchestrator():
+def get_orchestrator() -> OrchestratorAgent:
     """
     Lazy initialization of the orchestrator to avoid startup issues.
     """
@@ -154,7 +154,7 @@ async def orchestrate_discussion(request: OrchestrationRequest) -> dict[str, Any
 
 
 @app.get("/")
-def read_root():
+def read_root() -> dict[str, Any]:
     """
     Root endpoint providing service information.
     """
@@ -175,7 +175,7 @@ def read_root():
 
 
 @app.get("/health")
-def health_check():
+def health_check() -> dict[str, Any]:
     """
     Health check endpoint.
     """

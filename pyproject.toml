@@ -6,12 +6,46 @@ build-backend = "setuptools.build_meta"
 name = "47chat"
 version = "0.1.0"
 description = "AI Multi-Agent Orchestrator with RAG capabilities"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-authors = [{name = "47Chat Contributors"}]
-
-[tool.setuptools]
-packages = ["backend", "frontend"]
+authors = [
+    {name = "47Chat Contributors", email = "contributors@47chat.dev"}
+]
+maintainers = [
+    {name = "47Chat Contributors", email = "maintainers@47chat.dev"}
+]
+keywords = [
+    "ai",
+    "multi-agent",
+    "orchestrator",
+    "rag",
+    "llm",
+    "fastapi",
+    "streamlit",
+    "ollama",
+    "openai",
+    "machine-learning",
+    "nlp",
+    "chatbot",
+    "automation"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Framework :: FastAPI",
+    "Framework :: AsyncIO",
+]
+urls = {Repository = "https://github.com/Hipson47/47Chat.git"}
 dependencies = [
     "fastapi>=0.104,<1.0",
     "uvicorn[standard]>=0.24,<1.0",
@@ -32,6 +66,9 @@ dependencies = [
     "openai>=1.6,<2.0"
 ]
 
+[tool.setuptools]
+packages = ["backend", "frontend"]
+
 [project.optional-dependencies]
 dev = [
     "ruff>=0.5,<0.6",
@@ -41,19 +78,49 @@ dev = [
     "safety>=3,<4",
     "pre-commit>=3.5,<4"
 ]
+gpu = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "torchaudio>=2.0.0"
+]
+docs = [
+    "sphinx>=7.0,<8.0",
+    "sphinx-rtd-theme>=1.3,<2.0",
+    "myst-parser>=2.0,<3.0"
+]
+all = [
+    "47chat[dev,gpu,docs]"
+]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E","F","I","UP","B","SIM","W","PL","RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "W", "PL", "RUF"]
 ignore = ["D"]
+extend-select = ["I", "UP", "F", "E", "W"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend", "frontend"]
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+docstring-code-line-length = 88
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+enable_error_code = ["redundant-cast"]
 ignore_missing_imports = true
+exclude = ["build/"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

@@ -1,0 +1,162 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Agent Command Execution Security Rules
+
+## 🎯 COMMAND EXECUTION POLICY
+
+### ALLOWED COMMANDS (Safe Operations)
+The AI agent is permitted to execute these commands without additional approval:
+
+#### Development & Quality Tools
+- `ruff` (linting, formatting)
+- `mypy` (type checking)
+- `pytest` (testing)
+- `uv` (dependency management)
+
+#### Local Development Server
+- `uvicorn` (FastAPI server, local only)
+- `python -m uvicorn` (FastAPI server, local only)
+- `streamlit run` (frontend development)
+
+#### Build & Packaging
+- `python -m build` (package building)
+- `uv build` (package building)
+
+#### Version Control (Safe Operations)
+- `git status`
+- `git diff`
+- `git log`
+- `git show`
+
+### 🚫 RESTRICTED COMMANDS (Require Human Approval)
+
+#### Network & External Communication
+- `curl` - Network requests
+- `wget` - File downloads
+- `ssh` - Remote connections
+- `scp` - File transfers
+- `ftp` - File transfers
+- `rsync` - File synchronization
+
+#### System Administration
+- `sudo` - Privilege escalation
+- `su` - User switching
+- `chmod` - Permission changes
+- `chown` - Ownership changes
+- `kill` - Process termination
+- `pkill` - Process termination
+
+#### Package Management (Installation)
+- `pip install` - Package installation
+- `uv pip install` - Package installation
+- `apt-get` - System package management
+- `yum` - System package management
+- `brew` - macOS package management
+
+#### File System Operations (Dangerous)
+- `rm -rf` - Recursive deletion
+- `dd` - Disk operations
+- `mkfs` - Filesystem creation
+- `fdisk` - Disk partitioning
+
+#### Database Operations
+- `mysql` - Database access
+- `psql` - Database access
+- `mongosh` - Database access
+
+#### Secrets & Configuration
+- Commands accessing `.env*` files
+- Commands with hardcoded secrets
+- Commands accessing `secrets.*` files
+- Commands with API keys or tokens
+
+### ⚠️ CONDITIONAL COMMANDS (Context-Dependent)
+
+#### Git Operations (Safe with restrictions)
+- ✅ `git add .` - Allowed for staging changes
+- ✅ `git commit -m "message"` - Allowed for committing
+- ❌ `git push` - Requires human approval
+- ❌ `git pull` - Requires human approval (potential merge conflicts)
+
+#### Network (Local Development Only)
+- ✅ `curl http://localhost:*` - Local development
+- ❌ `curl https://api.example.com` - External APIs
+- ❌ `curl http://external-service.com` - External services
+
+### 🔍 DETECTION PATTERNS
+
+#### High-Risk Patterns
+```
+# Commands that should trigger security review:
+- Any command containing: password, secret, key, token, auth
+- Commands with external URLs (non-localhost)
+- Commands with file paths containing: /etc/, /usr/, /var/
+- Commands using: eval, exec, shell=True
+```
+
+#### Medium-Risk Patterns
+```
+# Commands requiring additional scrutiny:
+- Database connection strings
+- File operations on system directories
+- Network connections to non-standard ports
+- Commands with environment variable expansion
+```
+
+### 🛡️ SECURITY ENFORCEMENT
+
+#### Automatic Blocking
+- Commands containing hardcoded secrets → BLOCKED
+- Commands accessing sensitive files → BLOCKED
+- Commands with `shell=True` → BLOCKED
+- Commands with `eval()` or `exec()` → BLOCKED
+
+#### Manual Review Required
+- First-time execution of new commands
+- Commands accessing external services
+- Commands modifying system configuration
+- Commands with elevated privileges
+
+#### Audit Logging
+All command executions are logged with:
+- Command executed
+- User/context information
+- Timestamp
+- Execution result
+- Risk assessment
+
+### 📋 SECURITY WORKFLOW
+
+#### For AI Agent Commands:
+1. **Pre-Execution Check**: Validate against allowlist
+2. **Risk Assessment**: Check for dangerous patterns
+3. **Human Approval**: Request approval for restricted commands
+4. **Execution**: Run command with logging
+5. **Post-Execution**: Log results and check for anomalies
+
+#### For Development Commands:
+1. **Allowlist Check**: Verify command is permitted
+2. **Context Validation**: Ensure appropriate working directory
+3. **Execution**: Run with appropriate safeguards
+4. **Monitoring**: Watch for unusual behavior
+
+### 🚨 EMERGENCY BLOCKS
+
+#### Immediate Blocking (No Execution)
+- Commands containing API keys or secrets
+- Commands accessing `/etc/passwd` or similar
+- Commands with `rm -rf /` or similar destructive patterns
+- Commands attempting privilege escalation
+
+#### Alert Triggers
+- Multiple failed command attempts
+- Commands accessing sensitive file patterns
+- Unusual command frequency or patterns
+
+---
+
+**Security First**: When in doubt, block and require human approval. Better to be safe than sorry with potential security risks.

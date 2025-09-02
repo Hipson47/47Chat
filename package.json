@@ -1,0 +1,53 @@
+{
+  "name": "47chat",
+  "version": "0.1.0",
+  "description": "AI Multi-Agent Orchestrator with RAG capabilities",
+  "main": "frontend/app.py",
+  "scripts": {
+    "start": "python -m streamlit run frontend/app.py --server.port 8501 --server.address 127.0.0.1",
+    "start:dev": "python -m streamlit run frontend/app.py --server.port 8501 --server.address 127.0.0.1 --server.headless false",
+    "backend": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload",
+    "backend:prod": "python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000",
+    "dev": "npm run backend & npm run start:dev",
+    "test": "python -m pytest",
+    "lint": "python -m ruff check .",
+    "lint:fix": "python -m ruff check --fix .",
+    "format": "python -m ruff format .",
+    "type-check": "python -m mypy .",
+    "quality": "npm run lint && npm run type-check && npm run test",
+    "setup": "powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1",
+    "start:all": "start_local.bat"
+  },
+  "keywords": [
+    "ai",
+    "multi-agent",
+    "orchestrator",
+    "rag",
+    "llm",
+    "fastapi",
+    "streamlit",
+    "ollama",
+    "openai",
+    "machine-learning",
+    "nlp",
+    "chatbot",
+    "automation"
+  ],
+  "author": "47Chat Contributors <contributors@47chat.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hipson47/47Chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Hipson47/47Chat/issues"
+  },
+  "homepage": "https://github.com/Hipson47/47Chat#readme",
+  "engines": {
+    "python": ">=3.11.0"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "workspaces": [],
+  "private": true
+}

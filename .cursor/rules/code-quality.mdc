@@ -1,0 +1,174 @@
+---
+description: Code quality and AI assistance patterns for 47Chat
+globs:
+  alwaysApply: true
+---
+
+# Code Quality & AI Assistance Rules
+
+## 🔧 Code Quality Enforcement
+
+### Ruff Integration
+[Always]
+- Run `python -m ruff format .` and `python -m ruff check .` before committing
+- Auto-fix issues with `python -m ruff check --fix .` when possible
+- Respect the project's line length limit of 88 characters
+
+### Type Safety
+[Always]
+- Use type hints for all function parameters and return values
+- Prefer `list[Type]` over `List[Type]` (PEP 585)
+- Use Pydantic v2 patterns for data validation
+- Run `python -m mypy .` to verify type correctness
+
+### Import Organization
+[Always]
+- Standard library imports first
+- Third-party imports second
+- Local imports last
+- Use absolute imports when possible
+- Let Ruff handle import sorting automatically
+
+## 🤖 AI Assistance Patterns
+
+### Code Generation
+[Preferred]
+- Generate typed functions with comprehensive docstrings
+- Use Pydantic models for API request/response validation
+- Implement proper error handling with custom exceptions
+- Add logging with appropriate levels (INFO, WARNING, ERROR)
+
+### FastAPI Patterns
+[Preferred]
+- Use dependency injection for database connections and external services
+- Implement proper CORS configuration for frontend integration
+- Add response models for all API endpoints
+- Use HTTP status codes appropriately
+
+### Testing Patterns
+[Preferred]
+- Write unit tests for all utility functions
+- Mock external dependencies (LLM calls, file I/O)
+- Use descriptive test names and docstrings
+- Test both success and failure scenarios
+
+### Documentation
+[Preferred]
+- Write clear, concise docstrings following PEP 257
+- Document complex business logic with inline comments
+- Update docstrings when function signatures change
+- Keep API documentation in sync with implementation
+
+## 🚀 Development Workflow
+
+### Pre-commit Hooks
+[Recommended]
+- Install pre-commit hooks with `pre-commit install`
+- Run hooks on all files before committing
+- Fix any issues identified by the hooks
+
+### Dependency Management
+[Recommended]
+- Use `uv pip sync requirements.txt requirements-dev.txt` for dependency management
+- Keep `pyproject.toml` as the single source of truth
+- Update requirements files when pyproject.toml changes
+
+## 📋 File-specific Rules
+
+### Python Files
+[Always]
+- Use snake_case for function and variable names
+- Use PascalCase for class names
+- Use UPPER_CASE for constants
+- Maximum line length: 88 characters
+- Maximum function length: 50 lines (aim for smaller functions)
+
+### Configuration Files
+[Always]
+- Keep pyproject.toml as the single source of truth
+- Use environment variables for sensitive configuration
+- Document all configuration options
+
+### Test Files
+[Always]
+- Test files should mirror source file structure
+- Use descriptive test function names
+- Include edge cases and error scenarios
+- Mock external dependencies
+
+## 🔍 Code Review Checklist
+
+### Before Committing
+[Always]
+- [ ] Run Ruff formatting and linting
+- [ ] Run MyPy type checking
+- [ ] Run relevant tests
+- [ ] Update documentation if needed
+- [ ] Check that start_local.bat still works if backend/frontend changed
+
+### Pull Request Review
+[Always]
+- [ ] Code follows project's style guidelines
+- [ ] Type hints are comprehensive
+- [ ] Tests are included for new functionality
+- [ ] Documentation is updated
+- [ ] No security vulnerabilities introduced
+
+## 🛠️ Tool Integration
+
+### Ruff Configuration
+[Reference]
+```toml
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W", "PL", "RUF"]
+ignore = ["D"]
+```
+
+### MyPy Configuration
+[Reference]
+```toml
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+```
+
+### Testing Configuration
+[Reference]
+```toml
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --maxfail=1 --disable-warnings"
+testpaths = ["tests", "backend/tests"]
+```
+
+## 🎯 AI Context Integration
+
+### Project Awareness
+[Always]
+- Reference `llm-context.md` for project overview and architecture
+- Understand the multi-agent orchestration system
+- Know the FastAPI + Streamlit architecture
+- Respect the existing code patterns and conventions
+
+### Communication Style
+[Preferred]
+- Be concise but informative
+- Explain complex changes with clear reasoning
+- Suggest alternatives when appropriate
+- Ask for clarification when requirements are ambiguous
+
+### Error Prevention
+[Always]
+- Check for common mistakes (missing imports, syntax errors, etc.)
+- Validate that changes don't break existing functionality
+- Ensure proper error handling is included
+- Verify that the startup script still works after changes
+
+---
+
+**Remember**: This project uses modern Python tooling (uv, Ruff, MyPy) and follows FastAPI + Streamlit patterns. Always keep the codebase clean, typed, and well-tested! 🚀

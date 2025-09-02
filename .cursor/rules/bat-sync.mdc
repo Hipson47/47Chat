@@ -20,6 +20,8 @@ Files:
 - pyproject.toml
 - package.json
 - llm-context.md
+- requirements.txt
+- requirements-dev.txt
 
 Behavior:
 - Whenever `pyproject.toml` or `package.json` is changed, check if `start_local.bat` needs updates.

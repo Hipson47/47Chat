@@ -1,0 +1,227 @@
+---
+description: AI-specific patterns and best practices for 47Chat
+globs:
+  - "backend/orchestrator/**/*.py"
+  - "backend/**/*.py"
+alwaysApply: true
+---
+
+# AI Patterns & Best Practices
+
+## 🤖 LLM Integration Patterns
+
+### Provider Abstraction
+[Always]
+- Use abstract base classes for LLM providers (Ollama, OpenAI, etc.)
+- Implement consistent interfaces for all LLM operations
+- Handle provider-specific error types appropriately
+- Support graceful fallback between providers
+
+### Token Management
+[Preferred]
+- Track token usage for cost monitoring
+- Implement token limits to prevent runaway costs
+- Cache responses for identical prompts
+- Log token usage for analytics
+
+### Error Handling
+[Always]
+- Handle network timeouts gracefully
+- Implement retry logic with exponential backoff
+- Provide meaningful error messages to users
+- Log errors with appropriate context
+
+## 🧠 Multi-Agent Orchestration
+
+### Agent Design
+[Preferred]
+- Use composition over inheritance for agent capabilities
+- Implement clear separation of concerns between agents
+- Define agent competencies explicitly
+- Support dynamic agent configuration
+
+### Phase Management
+[Always]
+- Implement clear phase transitions
+- Validate phase prerequisites
+- Handle phase timeouts appropriately
+- Log phase completion and results
+
+### Conversation Flow
+[Preferred]
+- Maintain conversation context across phases
+- Implement conversation summarization for long discussions
+- Support conversation branching and merging
+- Preserve conversation history for debugging
+
+## 📊 RAG System Patterns
+
+### Document Processing
+[Always]
+- Validate document formats before processing
+- Handle encoding issues gracefully
+- Implement document chunking with overlap
+- Support incremental document updates
+
+### Vector Search
+[Preferred]
+- Use appropriate similarity metrics
+- Implement result ranking and filtering
+- Cache frequently accessed embeddings
+- Support metadata filtering in searches
+
+### Index Management
+[Always]
+- Implement atomic index updates
+- Handle index corruption gracefully
+- Support index backup and restore
+- Monitor index performance and size
+
+## 🔧 FastAPI Integration
+
+### API Design
+[Preferred]
+- Use Pydantic models for all request/response data
+- Implement proper HTTP status codes
+- Add comprehensive API documentation
+- Support both sync and async endpoints
+
+### Dependency Injection
+[Always]
+- Inject LLM providers as dependencies
+- Use dependency injection for configuration
+- Implement proper dependency scoping
+- Support dependency mocking for testing
+
+### Middleware
+[Preferred]
+- Implement logging middleware
+- Add request/response validation
+- Support CORS configuration
+- Implement rate limiting
+
+## 🧪 Testing AI Components
+
+### Mocking Strategy
+[Always]
+- Mock LLM API calls in unit tests
+- Use fixture-based mocking for consistency
+- Test error scenarios thoroughly
+- Validate mock data accuracy
+
+### Integration Testing
+[Preferred]
+- Test end-to-end orchestration flows
+- Validate multi-agent interactions
+- Test RAG retrieval accuracy
+- Monitor performance under load
+
+### Test Data Management
+[Always]
+- Use realistic test data for AI components
+- Implement test data generation utilities
+- Support test data versioning
+- Clean up test artifacts properly
+
+## 📈 Monitoring & Observability
+
+### Logging
+[Always]
+- Log all LLM interactions with appropriate detail
+- Include conversation IDs for traceability
+- Log performance metrics (latency, token usage)
+- Implement structured logging
+
+### Metrics
+[Preferred]
+- Track conversation success rates
+- Monitor agent performance by competency
+- Measure RAG retrieval accuracy
+- Alert on system performance degradation
+
+### Health Checks
+[Always]
+- Implement comprehensive health checks
+- Test LLM provider availability
+- Validate RAG index integrity
+- Monitor system resource usage
+
+## 🚀 Performance Optimization
+
+### Caching Strategy
+[Preferred]
+- Cache LLM responses for identical prompts
+- Implement embedding caching for documents
+- Use connection pooling for external APIs
+- Support distributed caching for scalability
+
+### Async Processing
+[Always]
+- Use async/await for I/O operations
+- Implement proper concurrency control
+- Support streaming responses for long operations
+- Handle async error propagation correctly
+
+### Resource Management
+[Preferred]
+- Implement proper resource cleanup
+- Monitor memory usage for large models
+- Support horizontal scaling
+- Optimize for both CPU and GPU usage
+
+## 🔒 Security Considerations
+
+### Input Validation
+[Always]
+- Validate all user inputs thoroughly
+- Sanitize prompts before sending to LLMs
+- Implement rate limiting per user
+- Log security-relevant events
+
+### API Key Management
+[Always]
+- Store API keys securely (environment variables)
+- Rotate keys regularly
+- Implement key usage monitoring
+- Support multiple key fallback
+
+### Data Privacy
+[Preferred]
+- Implement data anonymization where appropriate
+- Support user data deletion requests
+- Comply with relevant data protection regulations
+- Log data access for audit purposes
+
+## 📚 Documentation
+
+### Code Documentation
+[Always]
+- Document all AI-specific functions
+- Explain complex algorithms and logic
+- Include examples for key operations
+- Update documentation with API changes
+
+### API Documentation
+[Preferred]
+- Document all API endpoints comprehensively
+- Include request/response examples
+- Explain rate limits and usage guidelines
+- Provide troubleshooting guides
+
+### Architecture Documentation
+[Always]
+- Maintain up-to-date architecture diagrams
+- Document component interactions
+- Explain design decisions and trade-offs
+- Keep deployment and scaling guides current
+
+---
+
+**Key Principles for AI Development:**
+1. **Reliability**: Handle failures gracefully with proper fallbacks
+2. **Observability**: Log everything necessary for debugging and monitoring
+3. **Performance**: Optimize for both speed and resource usage
+4. **Security**: Validate inputs and protect sensitive data
+5. **Maintainability**: Write clean, well-documented, and testable code
+
+Remember to reference `llm-context.md` for project-specific information and patterns! 📚

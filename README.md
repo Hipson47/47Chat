@@ -71,12 +71,25 @@ The application follows a unified architecture where all components are integrat
    cd 47Chat
    ```
 
-2. **Install dependencies:**
+2. **Install uv (fast Python package manager):**
    ```bash
-   pip install -r backend/requirements.txt
+   # On macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # On Windows
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
 
-3. **Set up Ollama:**
+3. **Install dependencies:**
+   ```bash
+   # Sync all dependencies (runtime + development)
+   uv pip sync requirements.txt requirements-dev.txt
+
+   # Or install from source for development
+   uv pip install -e .[dev]
+   ```
+
+4. **Set up Ollama:**
    ```bash
    # Install and start Ollama service
    ollama pull llama3
@@ -238,6 +251,55 @@ This project is designed for easy extension and customization. Key areas for con
 ---
 
 **Powered by 47Chat Multi-Agent Orchestrator** | Local LLMs + RAG + Multi-Agent Intelligence
+
+---
+
+## 🔒 Security
+
+### Vulnerability Management
+
+47Chat takes security seriously and implements multiple layers of protection:
+
+#### Dependency Security
+- **Automated Scanning**: CI/CD pipeline runs `pip-audit` and `safety` scans on every push
+- **Regular Updates**: Dependencies are monitored for known vulnerabilities
+- **Pinned Versions**: All dependencies are pinned to prevent unexpected updates
+
+#### Secrets Management
+- **Environment Variables**: Never commit secrets - use `.env` files (excluded from version control)
+- **Credential Exclusion**: Comprehensive `.gitignore` and `.cursorignore` rules prevent accidental commits
+- **AI Context Protection**: Sensitive files are excluded from AI assistant context
+
+### Security Best Practices
+
+#### For Contributors
+1. **Never commit secrets**: Use environment variables for sensitive data
+2. **Validate inputs**: All user inputs are validated using Pydantic models
+3. **Review dependencies**: Check for vulnerabilities before adding new packages
+4. **Follow secure coding**: Adhere to OWASP guidelines and CWE recommendations
+
+#### For Users
+1. **Secure API keys**: Store OpenAI API keys securely in `.env` files
+2. **Network security**: Run services on secure networks only
+3. **Regular updates**: Keep dependencies updated to latest secure versions
+4. **Monitor logs**: Review application logs for security events
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please:
+1. **Do not create public issues** for security vulnerabilities
+2. **Email security concerns** to the maintainers directly
+3. **Allow time for fixes** before public disclosure
+4. **Follow responsible disclosure** practices
+
+### Security Features
+
+- ✅ **Input Validation**: Pydantic models for all API inputs
+- ✅ **Dependency Auditing**: Automated vulnerability scanning
+- ✅ **Secrets Protection**: Comprehensive exclusion rules
+- ✅ **Command Restrictions**: AI agent command execution controls
+- ✅ **Type Safety**: MyPy strict mode for runtime safety
+- ✅ **Code Quality**: Ruff linting with security rules
 
 ---
 

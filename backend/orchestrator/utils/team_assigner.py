@@ -3,8 +3,10 @@
 Utility for automatically assigning teams based on the user prompt.
 """
 
+from typing import Any
 
-def auto_assign_teams(prompt, meta_prompt):
+
+def auto_assign_teams(prompt: str, meta_prompt: dict[str, Any]) -> list[str]:
     """
     Assigns teams based on keyword matching in the user prompt.
 
