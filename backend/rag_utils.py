@@ -10,14 +10,19 @@ Persistence:
 This ensures the store is automatically reloaded after application restarts.
 """
 
-import faiss
 import json
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from pypdf import PdfReader
-import markdown
 import os
+from typing import Any
+
+import faiss
+import markdown
+import numpy as np
+from bs4 import BeautifulSoup
+from pypdf import PdfReader
+from sentence_transformers import SentenceTransformer
+
 from .config import settings
+
 
 class RAGUtils:
     def __init__(self, store_path: str | None = None, chunks_path: str | None = None):
@@ -41,7 +46,7 @@ class RAGUtils:
 
         if os.path.exists(self.chunks_path):
             try:
-                with open(self.chunks_path, "r", encoding="utf-8") as f:
+                with open(self.chunks_path, encoding="utf-8") as f:
                     self.chunks = json.load(f)
                 # Ensure chunks is a list of strings
                 if not isinstance(self.chunks, list):
@@ -78,14 +83,13 @@ class RAGUtils:
                 page_text = page.extract_text() or ""
                 text += f"[Page {page_num + 1}]\n{page_text}\n"
         elif file_type == ".md":
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 html = markdown.markdown(f.read())
                 # A simple way to get text from HTML, could be improved.
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(html, 'html.parser')
+                soup = BeautifulSoup(html, "html.parser")
                 text = soup.get_text()
-        else: # .txt
-            with open(file_path, 'r', encoding='utf-8') as f:
+        else:  # .txt
+            with open(file_path, encoding="utf-8") as f:
                 text = f.read()
         return text
 
@@ -97,7 +101,9 @@ class RAGUtils:
         - `overlap`: The overlap between chunks.
         """
         # Simple chunking logic
-        return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size - overlap)]
+        return [
+            text[i : i + chunk_size] for i in range(0, len(text), chunk_size - overlap)
+        ]
 
     def ingest(self, file_path: str) -> None:
         """
@@ -115,8 +121,10 @@ class RAGUtils:
             self.chunks.extend(new_chunks)
             # Initialize embedding model once
             if self._embedding_model is None:
-                self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-            embeddings = self._embedding_model.encode(new_chunks, convert_to_tensor=False)
+                self._embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+            embeddings = self._embedding_model.encode(
+                new_chunks, convert_to_tensor=False
+            )
             embeddings_array = np.array(embeddings, dtype="float32")
 
             if self.index is None:
@@ -138,16 +146,16 @@ class RAGUtils:
             return []
 
         if self._embedding_model is None:
-            self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            self._embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
         query_embedding = self._embedding_model.encode([query])
         query_array = np.array(query_embedding, dtype="float32")
         distances, indices = self.index.search(query_array, k)
         # Filter out invalid indices
         valid_indices = [i for i in indices[0] if i != -1 and i < len(self.chunks)]
-        
-        results = [{
-            "chunk": self.chunks[i],
-            "score": float(distances[0][j])
-        } for j, i in enumerate(valid_indices)]
-        
+
+        results = [
+            {"chunk": self.chunks[i], "score": float(distances[0][j])}
+            for j, i in enumerate(valid_indices)
+        ]
+
         return results

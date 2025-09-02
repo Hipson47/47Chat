@@ -1,0 +1,186 @@
+{
+    "version": "1.0.0",
+    "project": {
+      "name": "Python Functions Framework",
+      "runtime": "python==3.11",
+      "goals": [
+        "Lightweight, portable Python FaaS framework",
+        "HTTP/CloudEvents compatibility",
+        "High quality, security, and maintainability"
+      ]
+    },
+    "toolchain": {
+      "formatter_linter": "ruff",
+      "type_checker": "mypy",
+      "tests": "pytest",
+      "data_validation": "pydantic",
+      "ci_targets": {
+        "ruff": ["ruff format .", "ruff check --unsafe-fixes ."],
+        "mypy": ["mypy . --strict"],
+        "pytest": ["pytest -q --maxfail=1 --disable-warnings"]
+      },
+      "policies": {
+        "line_length": 88,
+        "target_python_version": "py311"
+      }
+    },
+    "contracts": {
+      "style": {
+        "typing_required": true,
+        "docstrings": "PEP257",
+        "naming": "PEP8",
+        "principles": ["DRY", "KISS", "composition_over_inheritance"]
+      },
+      "security": {
+        "no_hardcoded_secrets": true,
+        "env_vars_for_secrets": true,
+        "validate_all_inputs": true,
+        "cwe_to_avoid": [
+          "CWE-22", "CWE-78", "CWE-79",
+          "CWE-89", "CWE-94", "CWE-200",
+          "CWE-327", "CWE-798", "CWE-918",
+          "CWE-434"
+        ],
+        "prohibited_patterns": [
+          "open(.*, 'w').*system_path_without_sanitization",
+          "subprocess.*shell=True.*untrusted_input",
+          "requests.*verify=False",
+          "eval\\(",
+          "exec\\("
+        ]
+      },
+      "testing": {
+        "tdd_required": true,
+        "unit_tests_required_per_module": true,
+        "coverage_target": 0.8,
+        "test_structure": {
+          "dir": "tests/",
+          "naming": "test_*.py",
+          "framework": "pytest"
+        }
+      },
+      "api": {
+        "public_api_changes_require_approval": true,
+        "backwards_compatibility": "must_be_preserved_unless_major",
+        "error_handling": "explicit_exceptions_with_messages"
+      },
+      "performance": {
+        "optimize_after_correctness": true,
+        "forbid_premature_micro_optimizations": true
+      }
+    },
+    "files": {
+      "ignore_patterns": [
+        "__pycache__/",
+        "*.pyc",
+        "*.pyo",
+        "*.egg-info/",
+        "dist/",
+        "build/",
+        "logs/",
+        ".env*",
+        "secrets.json",
+        "*.pem",
+        "*.key"
+      ],
+      "generated_artifacts_policy": "do_not_include_in_context"
+    },
+    "agent_modes": {
+      "always": {
+        "intent": "Rules that apply in every interaction",
+        "rules": [
+          "Start with a PLAN of ≤ 6 steps.",
+          "Propose a MINIMAL DIFF to achieve the goal.",
+          "If context is missing, ask for exact files/sections instead of guessing.",
+          "Every new/changed code must include typing and tests.",
+          "Run local quality gates (ruff/mypy/pytest) and fix failures."
+        ],
+        "required_outputs": ["plan", "diff", "rationale", "quality_report"]
+      },
+      "auto_attached": [
+        {
+          "pattern": "**/*.py",
+          "extra_rules": [
+            "Keep import order/style consistent (ruff).",
+            "Avoid breaking public API; if unavoidable, document rationale."
+          ]
+        },
+        {
+          "pattern": "tests/**/*.py",
+          "extra_rules": [
+            "Add edge/negative cases.",
+            "Tests must not rely on network/disk without fakes/mocks."
+          ]
+        }
+      ],
+      "on_request": [
+        {
+          "name": "security_review",
+          "steps": [
+            "Scan for prohibited patterns (regex)",
+            "CWE checklist (see contracts.security.cwe_to_avoid)",
+            "Propose minimal diffs with mitigations"
+          ],
+          "outputs": ["findings", "fix_diff", "cwe_map"]
+        },
+        {
+          "name": "refactor_for_readability",
+          "steps": [
+            "Detect duplication and long functions (>50 LOC)",
+            "Extract/simplify without changing behavior",
+            "Ensure tests pass; add missing tests"
+          ],
+          "outputs": ["refactor_plan", "diff", "tests"]
+        }
+      ]
+    },
+    "workflows": {
+      "plan_then_execute": {
+        "phases": ["plan", "apply_diff", "run_quality_gates", "summarize"],
+        "quality_gates": ["ruff", "mypy", "pytest"]
+      },
+      "tdd_ai": {
+        "steps": [
+          "RED: add/run failing tests",
+          "GREEN: minimal passing implementation",
+          "REFACTOR: improve without changing behavior"
+        ]
+      },
+      "safe_edit_protocol": {
+        "diff_review_required": true,
+        "checkpointing": "small_commits_with_clear_messages",
+        "rollback_strategy": "revert_last_commit_if_gate_fails"
+      }
+    },
+    "prompting": {
+      "meta_prompt": {
+        "role": "You are the development agent for the Python Functions Framework.",
+        "priorities": [
+          "Security and contract compliance",
+          "Correctness and testability",
+          "Readability/maintainability",
+          "Performance (after correctness)"
+        ],
+        "style": "concise, precise, minimal diffs"
+      },
+      "templates": {
+        "implement_feature": "PLAN → DIFF → WHY IT SATISFIES CONTRACTS → QUALITY (ruff/mypy/pytest)",
+        "fix_security": "List CWE issues → Minimal fix diff → QUALITY gates → Confirmation",
+        "refactor": "Plan split/cleanup → Minimal non-breaking diffs → Tests still green"
+      }
+    },
+    "telemetry": {
+      "plan_tokens_budget": 1200,
+      "max_plan_steps": 6,
+      "abort_conditions": [
+        "Missing critical files for the task",
+        "Any violation of security/testing/style contracts"
+      ]
+    },
+    "governance": {
+      "change_control": "semver_for_public_api",
+      "review_required": true,
+      "ci_is_source_of_truth": true
+    }
+  }
+  

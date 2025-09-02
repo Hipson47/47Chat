@@ -1,0 +1,39 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Security Rule — Preventing Vulnerabilities & Secret Leaks
+
+## DO NOT
+- Do NOT hardcode secrets, tokens, keys, or passwords.
+- Do NOT commit `.env*`, `*.pem`, `*.key`, `secrets.json`, or any credentials.
+- Do NOT use `eval()` or `exec()`.
+
+## ALWAYS
+- Use environment variables for secrets (`os.environ[...]`) or a secret manager.
+- Validate all external inputs (prefer Pydantic models for strict parsing).
+- Use explicit exceptions with helpful messages; avoid bare `except`.
+
+## DANGEROUS PATTERNS TO AVOID (examples/regex)
+- `subprocess.*shell=True.*(user|untrusted)_input`
+- `requests\(.+verify=False`
+- `eval\(`, `exec\(`
+- Writing files to system paths without sanitization
+- Building SQL/command strings by concatenation
+
+## CWE CLASSES TO AVOID (must fail review if present)
+- CWE-22 Path Traversal
+- CWE-78 OS Command Injection
+- CWE-79 Cross-Site Scripting (for any web output)
+- CWE-89 SQL Injection
+- CWE-94 Code Injection
+- CWE-200 Information Exposure
+- CWE-327 Broken/weak crypto
+- CWE-798 Hardcoded Credentials
+- CWE-918 Server-Side Request Forgery
+- CWE-434 Unrestricted File Upload
+
+## REQUIRED OUTPUT (for security review/fix tasks)
+- Findings: list of issues, each mapped to CWE
+- Minimal fix diff(s), with explanation of mitigation

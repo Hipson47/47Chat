@@ -1,0 +1,29 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Rule: Keep start_local.bat in sync with project changes
+
+[Always]
+When modifying backend or frontend startup logic, update the `start_local.bat` file 
+to ensure the project can still be launched with one click.  
+- The backend must run on `127.0.0.1:%BACKEND_PORT%` (default 8000).  
+- The frontend must start with the correct npm/yarn command.  
+- Activate the correct Python virtual environment before backend launch.  
+- Print clear `[INFO]` messages in the console for each major step.  
+- Kill any process blocking the backend port before starting it.  
+
+[Auto Attached]
+Files:
+- start_local.bat
+- pyproject.toml
+- package.json
+- llm-context.md
+
+Behavior:
+- Whenever `pyproject.toml` or `package.json` is changed, check if `start_local.bat` needs updates.
+- Ensure the script reflects any new dependencies, entry points, or port changes.
+
+[Agent Requested]
+If asked to fix startup errors, always propose an update to `start_local.bat` in addition to code changes.

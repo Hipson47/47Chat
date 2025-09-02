@@ -1,0 +1,26 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Workflows Rule — Operational Templates
+
+## Plan-Then-Execute (default)
+1) Plan (≤ 6 steps)
+2) Apply minimal diff
+3) Run gates (ruff, mypy, pytest)
+4) If gates fail, iterate with smallest possible follow-up diffs
+5) Summarize with rationale and gate results
+
+## Safe-Edit Protocol
+- Prefer small, auditable diffs
+- Keep changes scoped to the task
+- If a refactor is needed, split it into isolated commits/diffs
+
+## Templates
+- Implement Feature:
+  PLAN → DIFF (code) → RATIONALE (contracts) → QUALITY (ruff/mypy/pytest)
+- Fix Security:
+  Findings (CWE) → Minimal Fix Diff → QUALITY (gates) → Confirmation
+- Refactor-For-Readability:
+  Plan split/extract → Minimal non-breaking diffs → Tests still green → Quality gates

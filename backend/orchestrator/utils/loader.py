@@ -3,8 +3,10 @@
 Utility for loading and preprocessing YAML files and other file types.
 """
 
-import yaml
 import os
+
+import yaml
+
 
 def load_meta_prompt(file_path):
     """
@@ -18,33 +20,38 @@ def load_meta_prompt(file_path):
     """
     # Compute common roots
     utils_dir = os.path.dirname(__file__)
-    orchestrator_dir = os.path.dirname(utils_dir)               # .../backend/orchestrator
-    backend_dir = os.path.dirname(orchestrator_dir)             # .../backend
-    project_root = os.path.dirname(backend_dir)                 # project root
+    orchestrator_dir = os.path.dirname(utils_dir)  # .../backend/orchestrator
+    backend_dir = os.path.dirname(orchestrator_dir)  # .../backend
+    project_root = os.path.dirname(backend_dir)  # project root
 
     # If the provided path contains a 'backend/' prefix, also try without it
     stripped = file_path
     backend_prefix = "backend/"
     if file_path.startswith(backend_prefix):
-        stripped = file_path[len(backend_prefix):]
+        stripped = file_path[len(backend_prefix) :]
 
     # Try given path and several robust fallbacks
     candidate_paths = [
-        file_path,                                          # as given (relative to CWD or absolute)
-        os.path.join(os.getcwd(), file_path),               # CWD + given
-        os.path.join(project_root, file_path),              # project_root + given
-        os.path.join(project_root, stripped),               # project_root + stripped
-        os.path.join(orchestrator_dir, "meta_prompt.yaml"), # directly next to orchestrator package
-        os.path.join(backend_dir, file_path),               # backend + given
-        os.path.join(backend_dir, stripped),                # backend + stripped
+        file_path,  # as given (relative to CWD or absolute)
+        os.path.join(os.getcwd(), file_path),  # CWD + given
+        os.path.join(project_root, file_path),  # project_root + given
+        os.path.join(project_root, stripped),  # project_root + stripped
+        os.path.join(
+            orchestrator_dir, "meta_prompt.yaml"
+        ),  # directly next to orchestrator package
+        os.path.join(backend_dir, file_path),  # backend + given
+        os.path.join(backend_dir, stripped),  # backend + stripped
     ]
     for path in candidate_paths:
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
             continue
-    raise FileNotFoundError(f"meta_prompt.yaml not found in any candidate paths: {candidate_paths}")
+    raise FileNotFoundError(
+        f"meta_prompt.yaml not found in any candidate paths: {candidate_paths}"
+    )
+
 
 def preprocess_file(file_path):
     """
@@ -56,5 +63,5 @@ def preprocess_file(file_path):
     Returns:
         str: The content of the file.
     """
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         return f.read()

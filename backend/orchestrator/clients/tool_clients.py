@@ -4,6 +4,7 @@ Wrappers for the various tools available to the orchestrator.
 This includes file search, web search, and python execution.
 """
 
+
 class ToolClient:
     def __init__(self):
         """
@@ -49,7 +50,7 @@ class ToolClient:
         """
         print(f"Executing Python code: {code}")
         return f"Execution result of: {code}"
-    
+
     def image_gen(self, prompt):
         """
         Generates an image from a prompt.

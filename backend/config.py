@@ -3,10 +3,11 @@
 Centralized configuration using pydantic-settings.
 Loads settings from environment variables and optional .env file.
 """
+
 from __future__ import annotations
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):

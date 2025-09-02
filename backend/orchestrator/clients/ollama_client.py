@@ -4,13 +4,17 @@ Wrapper for the local Ollama client.
 This client is responsible for interacting with the local Ollama model for the domain "alters".
 """
 
-import requests
 import json
-from typing import Dict, Any
+
+import requests
+
 from ...config import settings
 
+
 class LocalOllamaClient:
-    def __init__(self, model_name: str | None = None, base_url: str = "http://localhost:11434"):
+    def __init__(
+        self, model_name: str | None = None, base_url: str = "http://localhost:11434"
+    ):
         """
         Initializes the LocalOllamaClient.
 
@@ -38,34 +42,26 @@ class LocalOllamaClient:
                 "model": self.model_name,
                 "prompt": prompt,
                 "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "top_p": 0.9,
-                    "max_tokens": 500
-                }
+                "options": {"temperature": 0.7, "top_p": 0.9, "max_tokens": 500},
             }
-            
-            response = requests.post(
-                self.generate_url,
-                json=payload,
-                timeout=60
-            )
-            
+
+            response = requests.post(self.generate_url, json=payload, timeout=60)
+
             response.raise_for_status()
-            
+
             result = response.json()
             return result.get("response", "No response generated")
-            
+
         except requests.exceptions.ConnectionError:
             return f"Error: Could not connect to Ollama server at {self.base_url}. Please ensure Ollama is running."
         except requests.exceptions.Timeout:
             return "Error: Request to Ollama server timed out."
         except requests.exceptions.RequestException as e:
-            return f"Error: Request failed: {str(e)}"
+            return f"Error: Request failed: {e!s}"
         except json.JSONDecodeError:
             return "Error: Invalid response format from Ollama server."
         except Exception as e:
-            return f"Error: Unexpected error: {str(e)}"
+            return f"Error: Unexpected error: {e!s}"
 
     def is_available(self) -> bool:
         """
@@ -77,5 +73,5 @@ class LocalOllamaClient:
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             return response.status_code == 200
-        except:
+        except requests.exceptions.RequestException:
             return False

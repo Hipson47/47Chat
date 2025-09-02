@@ -1,0 +1,17 @@
+# Cache & build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+logs/
+
+# Environment & secrets
+.env*
+secrets.json
+*.pem
+*.key
+
+# Misc (extend as needed)
+*.log

@@ -4,10 +4,11 @@ Wrapper for the OpenAI API client used for moderator/final decision tasks.
 Defaults to the lightweight "gpt-5-nano" model.
 Falls back to mock responses when OPENAI_API_KEY is not present.
 """
+
 from __future__ import annotations
 
 import os
-from typing import Optional
+
 from ...config import settings
 
 try:
@@ -15,7 +16,9 @@ try:
 except Exception:  # pragma: no cover
     OpenAI = None  # type: ignore
 
-DEFAULT_MODEL = settings.OPENAI_MODEL if hasattr(settings, "OPENAI_MODEL") else "gpt-5-nano"
+DEFAULT_MODEL = (
+    settings.OPENAI_MODEL if hasattr(settings, "OPENAI_MODEL") else "gpt-5-nano"
+)
 
 
 class OpenAIModeratorClient:
@@ -24,10 +27,13 @@ class OpenAIModeratorClient:
         self.enabled = bool(self.api_key) and OpenAI is not None
         # Allow overriding model via env var
         # Prefer project settings; allow env override to keep flexibility
-        self.model = os.getenv("OPENAI_MODEL", settings.OPENAI_MODEL if hasattr(settings, "OPENAI_MODEL") else model)
+        self.model = os.getenv(
+            "OPENAI_MODEL",
+            settings.OPENAI_MODEL if hasattr(settings, "OPENAI_MODEL") else model,
+        )
         if self.enabled:
             # Lazy client creation to avoid import issues if pkg missing
-            self._client: Optional[OpenAI] = OpenAI(api_key=self.api_key)  # type: ignore[arg-type]
+            self._client: OpenAI | None = OpenAI(api_key=self.api_key)  # type: ignore[arg-type]
             print(f"Initialized OpenAI moderator client with model: {self.model}")
         else:
             self._client = None
@@ -44,7 +50,10 @@ class OpenAIModeratorClient:
             resp = self._client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a helpful moderator that synthesizes a final decision."},
+                    {
+                        "role": "system",
+                        "content": "You are a helpful moderator that synthesizes a final decision.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
             )
@@ -63,7 +72,9 @@ class OpenAIModeratorClient:
                 # Fallback to reading from content
                 if getattr(resp, "choices", None):
                     first = resp.choices[0]
-                    if hasattr(first, "message") and getattr(first.message, "content", None):
+                    if hasattr(first, "message") and getattr(
+                        first.message, "content", None
+                    ):
                         return str(first.message.content[0].text).strip()  # type: ignore[attr-defined]
                 return "[OpenAI] Empty response"
             except Exception as second_error:  # pragma: no cover

@@ -1,0 +1,21 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Tests Rule — TDD and Coverage Expectations
+
+## TDD WORKFLOW
+- RED: add/adjust tests to express the requirement; confirm they fail.
+- GREEN: implement the minimal code to pass all tests.
+- REFACTOR: improve code quality without changing behavior.
+
+## EXPECTATIONS
+- Each new function/class/module must have unit tests under `tests/`.
+- Include edge cases, invalid inputs, and negative flows.
+- Tests must run locally without network or filesystem side effects (use fakes/mocks).
+- Testing command: `pytest -q --maxfail=1 --disable-warnings`
+
+## OUTPUT FOR FEATURE/BUGFIX
+- Test diff first, then implementation diff
+- Short reasoning showing how tests prove the behavior

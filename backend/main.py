@@ -4,23 +4,27 @@ FastAPI backend for the unified Orchestrator and RAG service.
 Provides endpoints for document upload and orchestrated multi-agent discussions.
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Any
 import os
 import shutil
+from typing import Any
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
 # Support both package and script execution imports
 try:
-    from .rag_utils import RAGUtils
     from .config import settings
     from .orchestrator.agent import OrchestratorAgent
+    from .rag_utils import RAGUtils
 except ImportError:
-    from rag_utils import RAGUtils
     from config import settings
     from orchestrator.agent import OrchestratorAgent
+    from rag_utils import RAGUtils
 
-app = FastAPI(title="47Chat Orchestrator", description="Multi-agent AI orchestration with RAG capabilities")
+app = FastAPI(
+    title="47Chat Orchestrator",
+    description="Multi-agent AI orchestration with RAG capabilities",
+)
 
 # Initialize components
 rag_utils = RAGUtils()
@@ -31,9 +35,13 @@ UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
+
 class OrchestrationRequest(BaseModel):
-    question: str
-    use_rag: bool = True
+    question: str = Field(
+        ..., min_length=1, max_length=2000, description="The question to orchestrate"
+    )
+    use_rag: bool = Field(default=True, description="Whether to use RAG context")
+
 
 def get_orchestrator():
     """
@@ -44,8 +52,9 @@ def get_orchestrator():
         orchestrator = OrchestratorAgent()
     return orchestrator
 
+
 @app.post("/upload/")
-async def upload_files(files: List[UploadFile] = File(...)):
+async def upload_files(files: list[UploadFile] = File(...)):
     """
     Uploads files, extracts text, and ingests them into the RAG vector store.
     Accepts .pdf, .md, and .txt files.
@@ -53,37 +62,73 @@ async def upload_files(files: List[UploadFile] = File(...)):
     if not files:
         raise HTTPException(status_code=400, detail="No files were provided.")
 
+    # Validate file count
+    if len(files) > 10:
+        raise HTTPException(
+            status_code=400, detail="Maximum 10 files allowed per upload."
+        )
+
     ingested_files = []
-    
+
     for file in files:
+        # Validate filename
+        if not file.filename:
+            raise HTTPException(
+                status_code=400, detail="File must have a valid filename."
+            )
+
+        # Validate file type
+        allowed_extensions = {".pdf", ".md", ".txt"}
+        file_ext = os.path.splitext(file.filename.lower())[1]
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type '{file_ext}'. Allowed: {', '.join(allowed_extensions)}",
+            )
+
+        # Validate file size (max 10MB)
+        file_size = 0
+        file_content = await file.read()
+        file_size = len(file_content)
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            raise HTTPException(
+                status_code=400, detail="File too large. Maximum size: 10MB"
+            )
+
         safe_name = os.path.basename(file.filename)
         file_path = os.path.join(UPLOAD_DIR, safe_name)
-        
+
+        # Reset file pointer for reading
+        await file.seek(0)
+
         # Save the uploaded file
         try:
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-                
+
             # Ingest the file into the RAG store
             rag_utils.ingest(file_path)
             ingested_files.append(file.filename)
-            
+
         except Exception as e:
             # Clean up the uploaded file on failure
             if os.path.exists(file_path):
                 os.remove(file_path)
-            raise HTTPException(status_code=500, detail=f"Failed to ingest {file.filename}: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to ingest {file.filename}: {e}"
+            )
 
     return {
         "message": f"Successfully uploaded and ingested {len(ingested_files)} files.",
-        "files": ingested_files
+        "files": ingested_files,
     }
 
+
 @app.post("/orchestrate/")
-async def orchestrate_discussion(request: OrchestrationRequest) -> Dict[str, Any]:
+async def orchestrate_discussion(request: OrchestrationRequest) -> dict[str, Any]:
     """
     Runs a full multi-agent orchestrated discussion on the given question.
-    
+
     This endpoint:
     1. Takes a user question
     2. Optionally retrieves relevant context from the RAG store
@@ -97,18 +142,16 @@ async def orchestrate_discussion(request: OrchestrationRequest) -> Dict[str, Any
     try:
         # Get the orchestrator instance
         agent = get_orchestrator()
-        
+
         # Run the orchestrated discussion
         result = agent.run_round(request.question, use_rag=request.use_rag)
-        
-        return {
-            "status": "success",
-            "transcript": result
-        }
-        
+
+        return {"status": "success", "transcript": result}
+
     except Exception as e:
         # Provide more context to frontend including quick hint when 'teams' path missing
-        raise HTTPException(status_code=500, detail=f"Orchestration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Orchestration failed: {e!s}")
+
 
 @app.get("/")
 def read_root():
@@ -120,15 +163,16 @@ def read_root():
         "version": "1.0.0",
         "endpoints": {
             "/upload/": "Upload documents for RAG ingestion",
-            "/orchestrate/": "Run multi-agent orchestrated discussions"
+            "/orchestrate/": "Run multi-agent orchestrated discussions",
         },
         "config": {
             "OLLAMA_MODEL": settings.OLLAMA_MODEL,
             "META_PROMPT_PATH": settings.META_PROMPT_PATH,
             "FAISS_STORE_PATH": settings.FAISS_STORE_PATH,
             "CHUNKS_PATH": settings.CHUNKS_PATH,
-        }
+        },
     }
+
 
 @app.get("/health")
 def health_check():
@@ -142,13 +186,15 @@ def health_check():
         ollama_available = agent.ollama_client.is_available()
     except Exception:
         ollama_available = False
-    
+
     return {
         "status": "healthy",
         "ollama_available": ollama_available,
-        "rag_store_exists": os.path.exists(settings.FAISS_STORE_PATH)
+        "rag_store_exists": os.path.exists(settings.FAISS_STORE_PATH),
     }
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

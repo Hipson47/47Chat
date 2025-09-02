@@ -1,0 +1,45 @@
+function MAIN_TASK(request):
+  REQUIREMENTS := parse(request)
+  PLAN := propose_plan(REQUIREMENTS, max_steps=6)
+  assert PLAN is concise
+
+  if missing_context(REQUIREMENTS):
+    return ASK_FOR_FILES(exact_missing_parts(REQUIREMENTS))
+
+  DIFF := generate_minimal_diff(PLAN, contracts.style, contracts.api)
+  assert conforms_security(DIFF, contracts.security)
+  assert adds_or_updates_tests(DIFF, contracts.testing)
+
+  APPLY(DIFF)
+
+  REPORT := run_gates(["ruff format .",
+                       "ruff check --unsafe-fixes .",
+                       "mypy . --strict",
+                       "pytest -q --maxfail=1 --disable-warnings"])
+
+  while REPORT.failed:
+    FIX := compute_smallest_fix(REPORT, contracts)
+    APPLY(FIX)
+    REPORT := run_gates_again()
+
+  SUMMARY := {
+    "plan": PLAN,
+    "diff": DIFF,
+    "quality_report": REPORT,
+    "rationale": explain_contract_compliance(DIFF, contracts)
+  }
+  return SUMMARY
+
+
+function conforms_security(diff, security_contract):
+  if matches_any(diff, security_contract.prohibited_patterns):
+    raise SecurityViolation()
+  if contains_cwe_risk(diff, security_contract.cwe_to_avoid):
+    attempt_mitigation(diff)
+  return true
+
+
+function adds_or_updates_tests(diff, testing_contract):
+  if touches_src_without_tests(diff):
+    create_or_update_tests(diff, testing_contract)
+  return true
