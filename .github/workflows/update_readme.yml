@@ -1,0 +1,49 @@
+name: Update README
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Generate project structure
+        run: |
+          sudo apt-get update && sudo apt-get install -y tree
+          tree -I 'rag_env|__pycache__|.git*|.vscode|uploads|rag_store.faiss|rag_chunks.json' > structure.txt
+
+      - name: Update README
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          readme_path = Path('README.md')
+          structure_path = Path('structure.txt')
+          readme = readme_path.read_text(encoding='utf-8')
+          structure = structure_path.read_text(encoding='utf-8')
+          start = '<!-- STRUCTURE:START -->'
+          end = '<!-- STRUCTURE:END -->'
+          if start in readme and end in readme:
+              prefix, rest = readme.split(start, 1)
+              _, suffix = rest.split(end, 1)
+              new = f"{prefix}{start}\n```\n{structure}\n```\n{end}{suffix}"
+              readme_path.write_text(new, encoding='utf-8')
+          else:
+              print('Structure markers not found in README; skipping update.')
+          PY
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "README is already up to date."
+          else
+            git commit -m "docs: Automatyczna aktualizacja struktury projektu w README"
+            git push
+          fi
